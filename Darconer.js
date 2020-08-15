@@ -54,7 +54,6 @@ let Services = {
 
 		assigner.assign( self, await Configurator.derive( config ) )
 
-		this.idLength = config.idLength || 16
 		this.clerobee = new Clerobee( this.idLength )
 		this.nodeID = this.clerobee.generate( ),
 
@@ -206,10 +205,10 @@ let Services = {
 					self.logger.darconlog( null, 'NATS reconnected')
 				})
 
-				if ( self.timeout > 0 ) {
+				if ( self.tolerance > 0 ) {
 					self.cleaner = setInterval( function () {
 						self.cleanupMessages()
-					}, self.timeout )
+					}, self.tolerance )
 				}
 			} catch (err) { reject(err) }
 		} )
@@ -255,12 +254,15 @@ let Services = {
 	async cleanupMessages () {
 		let self = this
 
+		console.log('---------', self.tolerance)
 		let time = Date.now()
 		for ( let key of Object.keys( self.messages ) ) {
-			if ( time - self.messages[key].timestamp > self.timeout ) {
+			if ( time - self.messages[key].timestamp > self.tolerance ) {
 				let callbackFn = self.messages[key].callback
+				let entity = self.messages[key].entity
+				let message = self.messages[key].message
 				delete self.messages[ key ]
-				callbackFn( new Error('Response timeout') )
+				callbackFn( new Error( `Response timeout to ${entity} ${message}` ) )
 			}
 		}
 	},
@@ -339,7 +341,9 @@ let Services = {
 			}
 			self.messages[ packet.uid ] = {
 				timestamp: Date.now(),
-				callback
+				callback,
+				entity: packet.comm.entity,
+				message: packet.comm.message
 			}
 			packet.comm.dispatchDate = Date.now()
 			this.nats.publish( socketName, JSON.stringify( packet ) )

@@ -6,6 +6,8 @@ newQuanstructor( 'Natser', {
 
 let Configurator = newQuanstructor( 'Configurator', {
 	idLength: { default: 16, validation: VALIDATION_NUM },
+
+	tolerance: { default: 2000, validation: VALIDATION_NUM },
 	reporterInterval: { default: 2000, validation: VALIDATION_NUM },
 	keeperInterval: { default: 3000, validation: VALIDATION_NUM },
 
