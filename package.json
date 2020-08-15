@@ -1,0 +1,48 @@
+{
+	"name": "darcon",
+	"version": "1.0.0",
+	"description": "Simple Messaging/Service Bus for node entities over NatsIO",
+	"keywords": [
+		"messaging",
+		"enterprise service bus",
+		"natsio"
+	],
+	"homepage": "https://github.com/imrefazekas/darcon",
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/imrefazekas/darcon.git"
+	},
+	"bugs": {
+		"url": "http://github.com/imrefazekas/darcon/issues"
+	},
+	"author": {
+		"name": "Imre Fazekas",
+		"email": "mail@imrefazekas.me"
+	},
+	"license": "MIT",
+	"main": "./Darconer.js",
+	"dependencies": {
+		"assign.js": "^2.8.11",
+		"clerobee": "^1.0.1",
+		"isa.js": "^2.2.15",
+		"nats": "^1.4.12",
+		"proback.js": "^2.1.15",
+		"quanstructor": "^0.4.20",
+		"vindication.js": "^4.20.4"
+	},
+	"devDependencies": {
+		"chai": "^4.2.0",
+		"pino": "~6",
+		"pino-pretty": "~4",
+		"@nlv8/signun": "^1.4.0"
+	},
+	"engines": {
+		"node": ">= 8.0.0"
+	},
+	"scripts": {
+		"lint": "eslint lib/",
+		"mocha": "mocha test/darcon.mocha.js",
+		"mocha-bender": "mocha test/darcon-bender.mocha.js",
+		"test": "mocha test/darcon.mocha.js; mocha test/darcon-bender.mocha.js"
+	}
+}
