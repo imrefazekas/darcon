@@ -11,7 +11,7 @@ const fs = require('fs')
 const path = require('path')
 let VERSION = exports.VERSION = JSON.parse( fs.readFileSync( path.join( __dirname, 'package.json'), 'utf8' ) ).version
 
-let { MODE_REQUEST, MODE_INFORM, MODE_DELEGATE, CommPacketer, CommPresencer } = require( './models/Packet' )
+let { MODE_REQUEST, MODE_INFORM, MODE_DELEGATE, CommPacketer, CommPresencer } = require( './models/Packet' )
 
 const HIDDEN_SERVICES_PREFIX = '_'
 const SERVICES_REPORTS = 'darcon_service_reports'
@@ -52,6 +52,7 @@ let Services = {
 		this.name = config.name || 'Daconer'
 		config.logger = config.logger || PinoLogger( this.name, config.log )
 
+		this.strict = !!config.strict
 		assigner.assign( self, await Configurator.derive( config ) )
 
 		this.clerobee = new Clerobee( this.idLength )
@@ -72,7 +73,7 @@ let Services = {
 
 		await this.innerCreateIn( SERVICES_REPORTS, '', async function ( message ) {
 			try {
-				let present = await CommPresencer.derive( JSON.parse( message ) )
+				let present = self.strict ? await CommPresencer.derive( JSON.parse( message ) ) : JSON.parse( message )
 
 				if ( !self.presences[ present.entity ] )
 					self.presences[ present.entity ] = {}
@@ -89,6 +90,52 @@ let Services = {
 		} )
 	},
 
+	async processMessage (incoming) {
+		let self = this
+		if ( incoming.comm.response || incoming.comm.error ) {
+			incoming.comm.receptionDate = Date.now()
+
+			if ( !self.messages[ incoming.uid ] ) return OK
+			self.messages[ incoming.uid ].callback(
+				incoming.comm.error ? new DarconError( incoming.comm.error.message, incoming.comm.error.errorName, incoming.comm.error.errorcode ) : null,
+				incoming.comm.error ? null : incoming.comm.response
+			)
+		}
+		else {
+			incoming.comm.arrivalDate = Date.now()
+
+			incoming.comm.responderNodeID = self.nodeID
+			try {
+				let paramsToPass = incoming.comm.params.concat( [ {
+					async request (to, message, ...params) {
+						return self.innercomm(MODE_REQUEST, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, ...params)
+					},
+					async inform (to, message, ...params) {
+						return self.innercomm(MODE_INFORM, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, ...params)
+					},
+					async delegate (to, message, delegateEntity, delegateMessage, ...params) {
+						return self.innercomm(MODE_DELEGATE, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, delegateEntity, delegateMessage, ...params)
+					},
+					comm: incoming.comm
+				} ] )
+				incoming.comm.response = await self.ins[ incoming.comm.entity ].entity[ incoming.comm.message ]( ...paramsToPass )
+			} catch (err) {
+				incoming.comm.error = { message: err.message || err.toString(), code: err.code || err.errorCode || err.errorcode || '-1', errorName: err.errorName || '' }
+			}
+
+			if (incoming.comm.mode === MODE_INFORM) return OK
+
+			if (incoming.comm.mode === MODE_DELEGATE) {
+			}
+			else {
+				let socketName = incoming.comm.source + SEPARATOR + incoming.comm.sourceNodeID
+				incoming.comm.responseDate = Date.now()
+				self.nats.publish( socketName, JSON.stringify( incoming ) )
+			}
+
+			return OK
+		}
+	},
 	async publish (...entities) {
 		let self = this
 		for (let entity of entities) {
@@ -121,50 +168,8 @@ let Services = {
 
 			await this.innerCreateIn( entity.name, this.nodeID, async function ( message ) {
 				try {
-					let incoming = await CommPacketer.derive( JSON.parse( message ) )
-					if ( incoming.comm.response || incoming.comm.error ) {
-						incoming.comm.receptionDate = Date.now()
-
-						if ( !self.messages[ incoming.uid ] ) return OK
-						self.messages[ incoming.uid ].callback(
-							incoming.comm.error ? new DarconError( incoming.comm.error.message, incoming.comm.error.errorName, incoming.comm.error.errorcode ) : null,
-							incoming.comm.error ? null : incoming.comm.response
-						)
-					}
-					else {
-						incoming.comm.arrivalDate = Date.now()
-
-						incoming.comm.responderNodeID = self.nodeID
-						try {
-							let paramsToPass = incoming.comm.params.concat( [ {
-								async request (to, message, ...params) {
-									return self.innercomm(MODE_REQUEST, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, ...params)
-								},
-								async inform (to, message, ...params) {
-									return self.innercomm(MODE_INFORM, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, ...params)
-								},
-								async delegate (to, message, delegateEntity, delegateMessage, ...params) {
-									return self.innercomm(MODE_DELEGATE, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, delegateEntity, delegateMessage, ...params)
-								},
-								comm: incoming.comm
-							} ] )
-							incoming.comm.response = await self.ins[ incoming.comm.entity ].entity[ incoming.comm.message ]( ...paramsToPass )
-						} catch (err) {
-							incoming.comm.error = { message: err.message || err.toString(), code: err.code || err.errorCode || err.errorcode || '-1', errorName: err.errorName || '' }
-						}
-
-						if (incoming.comm.mode === MODE_INFORM) return OK
-
-						if (incoming.comm.mode === MODE_DELEGATE) {
-						}
-						else {
-							let socketName = incoming.comm.source + SEPARATOR + incoming.comm.sourceNodeID
-							incoming.comm.responseDate = Date.now()
-							self.nats.publish( socketName, JSON.stringify( incoming ) )
-						}
-
-						return OK
-					}
+					let incoming = self.strict ? await CommPacketer.derive( JSON.parse( message ) ) : JSON.parse( message )
+					self.processMessage( incoming ).catch( (err) => { self.logger.darconlog( err ) } )
 				} catch (err) {
 					console.error(err)
 					self.logger.darconlog( err )
@@ -254,7 +259,6 @@ let Services = {
 	async cleanupMessages () {
 		let self = this
 
-		console.log('---------', self.tolerance)
 		let time = Date.now()
 		for ( let key of Object.keys( self.messages ) ) {
 			if ( time - self.messages[key].timestamp > self.tolerance ) {
@@ -275,11 +279,12 @@ let Services = {
 				if (name === SERVICES_REPORTS || name === GATER) continue
 
 				let entity = this.ins[ name ]
-				self.nats.publish( SERVICES_REPORTS, JSON.stringify( await CommPresencer.derive( {
+				let report = {
 					entity: entity.name,
 					nodeID: self.nodeID,
 					entityVersion: entity.version
-				} ) ) )
+				}
+				self.nats.publish( SERVICES_REPORTS, self.strict ? JSON.stringify( await CommPresencer.derive( report ) ) : JSON.stringify( report ) )
 			}
 		} catch ( err ) { self.logger.darconlog( err ) }
 	},
@@ -308,14 +313,19 @@ let Services = {
 	async innercomm (mode, flowID, processID, source, sourceNodeID, entity, message, delegateEntity, delegateMessage, ...params) {
 		let self = this
 
+		if (mode === MODE_DELEGATE && (!delegateEntity || !delegateMessage) )
+			throw new Error( `Delegation attributes must be set when mode is \'${MODE_DELEGATE}\'` )
+
 		let nodeID = this._randomNodeID( entity )
 		let socketName = entity + SEPARATOR + nodeID
 
-		let packet = await CommPacketer.derive( {
+		let uid = self.clerobee.generate( )
+		let packet = {
+			uid,
 			comm: {
 				mode,
 
-				uid: self.clerobee.generate( ),
+				uid,
 
 				flowID: flowID || self.clerobee.generate(),
 				processID: processID || self.clerobee.generate(),
@@ -331,7 +341,8 @@ let Services = {
 
 				params
 			}
-		} )
+		}
+		packet = self.strict ? await CommPacketer.derive( packet ) : packet
 
 		return new Promise( (resolve, reject) => {
 			let callback = function ( err, res ) {
