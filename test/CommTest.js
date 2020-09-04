@@ -21,7 +21,7 @@ async function start () {
 		error () {}
 	}
 
-	return Darcon.publish(
+	await Darcon.publish(
 		{
 			name: 'Marie',
 			version: '2.0.0',
@@ -29,7 +29,9 @@ async function start () {
 				let terms = params[ params.length - 1 ]
 				return params.slice(0, -1).concat( await terms.request( 'Claire', 'extend', 'Wow' ) ).concat( await this.request( 'Claire', 'extend', 'Awesome', terms ) )
 			}
-		},
+		}
+	)
+	await Darcon.publish(
 		{
 			name: 'Claire',
 			version: '2.0.0',
@@ -37,7 +39,6 @@ async function start () {
 				return params.slice(0, -1)
 			}
 		}
-
 	)
 }
 

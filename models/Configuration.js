@@ -1,4 +1,4 @@
-let { newQuanstructor, VALIDATION_STR, VALIDATION_NUM, VALIDATION_BOOL, VALIDATION_OBJ } = require('./Devise')
+let { newQuanstructor, VALIDATION_STR, VALIDATION_NUM, VALIDATION_BOOL, VALIDATION_ARR, VALIDATION_OBJ } = require('./Devise')
 
 newQuanstructor( 'Natser', {
 	url: { default: 'nats://localhost:4222', validation: VALIDATION_STR }
@@ -23,7 +23,10 @@ let Configurator = newQuanstructor( 'Configurator', {
 
 	logger: { validation: VALIDATION_OBJ },
 
-	entityAppeared: { default: null }
+	entityAppeared: { default: null },
+
+	entities: { default: {}, validation: VALIDATION_OBJ },
+	millieu: { default: {}, validation: VALIDATION_OBJ }
 } )
 
 module.exports = {

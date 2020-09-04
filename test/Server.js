@@ -43,7 +43,7 @@ async function darconer () {
 	config.name = DIVISION
 	await Darcon.init( config )
 
-	return Darcon.publish(
+	await Darcon.publish(
 		{
 			name: 'Marie',
 			version: '2.0.0',
@@ -51,7 +51,9 @@ async function darconer () {
 				let terms = params[ params.length - 1 ]
 				return params.slice(0, -1).concat( await terms.request( 'Claire', 'extend', 'Wow' ) ).concat( await this.request( 'Claire', 'extend', 'Awesome', terms ) )
 			}
-		},
+		}
+	)
+	await Darcon.publish(
 		{
 			name: 'Claire',
 			version: '2.0.0',

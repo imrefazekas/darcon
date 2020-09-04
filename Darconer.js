@@ -167,56 +167,59 @@ Object.assign( Darcon.prototype, {
 		return self.ins[ name ]
 	},
 
-	async publish (...entities) {
+	async publish (entity, config = {}) {
 		let self = this
-		for (let entity of entities) {
-			let functions = _.functionNames( entity ).filter( (fnName) => { return !fnName.startsWith( HIDDEN_SERVICES_PREFIX ) } )
 
-			// if (entity.request) throw new Error('Entity already has a request function')
-			entity.request = async function (to, message, ...params) {
-				let terms = params[ params.length - 1 ]
-				let rP = params.slice( 0, -1 )
-				return self.innercomm(MODE_REQUEST, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, null, null, ...rP)
-			}
-			// if (entity.inform) throw new Error('Entity already has a inform function')
-			entity.inform = async function (to, message, ...params) {
-				let terms = params[ params.length - 1 ]
-				let rP = params.slice( 0, -1 )
-				return self.innercomm(MODE_INFORM, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, null, null, ...rP)
-			}
-			// if (entity.delegate) throw new Error('Entity already has a delegate function')
-			entity.delegate = async function (to, message, delegateEntity, delegateMessage, ...params) {
-				let terms = params[ params.length - 1 ]
-				let rP = params.slice( 0, -1 )
-				return self.innercomm(MODE_DELEGATE, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, delegateEntity, delegateMessage, ...rP)
-			}
+		let cfg = assigner.assign( {}, this.entities[ entity.name ] || {}, config.millieu || {} )
+		if (entity.init)
+			await entity.init( cfg )
 
-			if ( !self.ins[ entity.name ] )
-				self.ins[ entity.name ] = {
-					name: entity.name,
-					version: entity.version || entity.VERSION || '1.0.0',
-					services: functions,
-					entity
-				}
+		let functions = _.functionNames( entity ).filter( (fnName) => { return !fnName.startsWith( HIDDEN_SERVICES_PREFIX ) } )
 
-			await self.innerCreateIn( entity.name, self.nodeID, async function ( message ) {
-				try {
-					let incoming = self.strict ? await CommPacketer.derive( JSON.parse( message ) ) : JSON.parse( message )
-					if ( incoming.chunk && incoming.chunk.no > 0 ) {
-						if (!self.chunks[ incoming.uid ]) self.chunks[ incoming.uid ] = []
-						self.chunks[ incoming.uid ].push( incoming.chunk.data )
-						if ( self.chunks[ incoming.uid ].length === incoming.chunk.of ) {
-							let packaet = self.chunks[ incoming.uid ].sort( (a, b) => { return a.of < b.of } ).reduce( (a, b) => { return a.concat(b) } )
-							delete self.chunks[ incoming.uid ]
-							self.processMessage( JSON.parse( packaet ) ).catch( (err) => { self.logger.darconlog( err ) } )
-						}
-					}
-					else self.processMessage( incoming ).catch( (err) => { self.logger.darconlog( err ) } )
-				} catch (err) {
-					self.logger.darconlog( err )
-				}
-			} )
+		// if (entity.request) throw new Error('Entity already has a request function')
+		entity.request = async function (to, message, ...params) {
+			let terms = params[ params.length - 1 ]
+			let rP = params.slice( 0, -1 )
+			return self.innercomm(MODE_REQUEST, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, null, null, ...rP)
 		}
+		// if (entity.inform) throw new Error('Entity already has a inform function')
+		entity.inform = async function (to, message, ...params) {
+			let terms = params[ params.length - 1 ]
+			let rP = params.slice( 0, -1 )
+			return self.innercomm(MODE_INFORM, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, null, null, ...rP)
+		}
+		// if (entity.delegate) throw new Error('Entity already has a delegate function')
+		entity.delegate = async function (to, message, delegateEntity, delegateMessage, ...params) {
+			let terms = params[ params.length - 1 ]
+			let rP = params.slice( 0, -1 )
+			return self.innercomm(MODE_DELEGATE, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, delegateEntity, delegateMessage, ...rP)
+		}
+
+		if ( !self.ins[ entity.name ] )
+			self.ins[ entity.name ] = {
+				name: entity.name,
+				version: entity.version || entity.VERSION || '1.0.0',
+				services: functions,
+				entity
+			}
+
+		await self.innerCreateIn( entity.name, self.nodeID, async function ( message ) {
+			try {
+				let incoming = self.strict ? await CommPacketer.derive( JSON.parse( message ) ) : JSON.parse( message )
+				if ( incoming.chunk && incoming.chunk.no > 0 ) {
+					if (!self.chunks[ incoming.uid ]) self.chunks[ incoming.uid ] = []
+					self.chunks[ incoming.uid ].push( incoming.chunk.data )
+					if ( self.chunks[ incoming.uid ].length === incoming.chunk.of ) {
+						let packaet = self.chunks[ incoming.uid ].sort( (a, b) => { return a.of < b.of } ).reduce( (a, b) => { return a.concat(b) } )
+						delete self.chunks[ incoming.uid ]
+						self.processMessage( JSON.parse( packaet ) ).catch( (err) => { self.logger.darconlog( err ) } )
+					}
+				}
+				else self.processMessage( incoming ).catch( (err) => { self.logger.darconlog( err ) } )
+			} catch (err) {
+				self.logger.darconlog( err )
+			}
+		} )
 	},
 
 	async connect () {
