@@ -72,10 +72,10 @@ Object.assign( Darcon.prototype, {
 		}
 		this.chunks = {}
 
+		await this.connect( )
+
 		this.reporter = setInterval( () => { self.reportStatus() }, this.reporterInterval )
 		this.keeper = setInterval( () => { self.checkPresence() }, this.keeperInterval )
-
-		await this.connect( )
 
 		await this.innerCreateIn( SERVICES_REPORTS, '', async function ( message ) {
 			try {
@@ -198,19 +198,10 @@ Object.assign( Darcon.prototype, {
 			let rP = params.slice( 0, -1 )
 			return self.innercomm(MODE_DELEGATE, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, delegateEntity, delegateMessage, ...rP)
 		}
-		if ( !self.ins[ entity.name ] )
-			self.ins[ entity.name ] = {
-				name: entity.name,
-				version: entity.version || entity.VERSION || '1.0.0',
-				services: functions,
-				entity
-			}
-
 
 		let cfg = assigner.assign( { logger: self.logger }, config, this.entities[ entity.name ] || {}, config.millieu || {} )
 		if (entity.init)
 			await entity.init( cfg )
-
 
 		await self.innerCreateIn( entity.name, self.nodeID, async function ( message ) {
 			try {
@@ -229,6 +220,16 @@ Object.assign( Darcon.prototype, {
 				self.logger.darconlog( err )
 			}
 		} )
+
+
+		if ( !self.ins[ entity.name ] )
+			self.ins[ entity.name ] = {
+				name: entity.name,
+				version: entity.version || entity.VERSION || '1.0.0',
+				services: functions,
+				entity
+			}
+
 	},
 
 	async connect () {
@@ -325,7 +326,7 @@ Object.assign( Darcon.prototype, {
 				let message = self.messages[key].message
 				delete self.messages[ key ]
 				delete self.chunks[ key ]
-				callbackFn( new Error( `Response timeout to ${entity} ${message}` ) )
+				callbackFn( new Error( `Response timeout to ${entity}:${message}` ) )
 			}
 		}
 	},
