@@ -285,7 +285,7 @@ Object.assign( Darcon.prototype, {
 				clearInterval( self.cleaner )
 
 			for (let entityRef in self.ins) {
-				let entity = self.ins[entityRef]
+				let entity = self.ins[entityRef].entity
 				if (entity.close)
 					entity.close().catch( (err) => { self.logger.darconlog(err) } )
 			}
