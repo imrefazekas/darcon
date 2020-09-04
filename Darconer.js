@@ -370,7 +370,7 @@ Object.assign( Darcon.prototype, {
 
 			if ( Object.keys( self.presences[entity] ).length === 0 )
 				if ( self.entityDisappeared )
-					self.entityDisappeared( self, name ).catch( (err) => { self.logger.darconlog(err) } )
+					self.entityDisappeared( self, entity ).catch( (err) => { self.logger.darconlog(err) } )
 		} )
 	},
 
