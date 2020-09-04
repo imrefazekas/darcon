@@ -106,8 +106,6 @@ Object.assign( Darcon.prototype, {
 	},
 
 	_entityAppeared: async function ( name, nodeID ) {
-		console.log('!!!!!!!!!!', name, nodeID)
-
 		if ( this.entityAppeared )
 			await this.entityAppeared( this, name, nodeID )
 
@@ -164,6 +162,11 @@ Object.assign( Darcon.prototype, {
 			return OK
 		}
 	},
+
+	entity (name) {
+		return self.ins[ name ]
+	},
+
 	async publish (...entities) {
 		let self = this
 		for (let entity of entities) {
