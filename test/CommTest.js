@@ -17,14 +17,15 @@ async function start () {
 		enabled: true,
 		folder: path.join( __dirname, 'bus' )
 	}
-	await Darcon.init( config )
 	config.logger = {
-		debug () {},
-		warn () {},
-		trace () {},
-		info () {},
-		error () {}
+		debug () { },
+		warn () { },
+		trace (obj) { },
+		info () { },
+		error () { },
+		darconlog () { }
 	}
+	await Darcon.init( config )
 
 	await Darcon.publish(
 		{
@@ -69,7 +70,7 @@ async function close () {
 }
 
 start().then( () => {
-	return Proback.timeout( 3000 )
+	return Proback.timeout( 5000 )
 } ).then( () => {
 	return comm( )
 } ).then( (response) => {

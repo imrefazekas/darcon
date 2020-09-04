@@ -377,13 +377,17 @@ Object.assign( Darcon.prototype, {
 		if ( packetString.length >= this.maxCommSize )
 			throw new Error( `The packet is exceeded the ${this.maxCommSize}!` )
 
-		if ( packetString.length < this.commSize )
-			return this.natsServer.publish( socketName, packetString )
-
-		let chunks = chunkString( packetString, this.commSize )
-		for ( let i = 0; i < chunks.length; ++i ) {
-			let newPacket = { uid: packet.uid, chunk: { no: i + 1, of: chunks.length, data: chunks[ i ] } }
-			this.natsServer.publish( socketName, this.strict ? JSON.stringify( await CommPacketer.derive( newPacket ) ) : JSON.stringify( newPacket ) )
+		if ( packetString.length < this.commSize ) {
+			this.natsServer.publish( socketName, packetString )
+			this.logger[ this.logLevel ]( { darcon: this.name, nodeID: this.nodeID, sent: packet } )
+		}
+		else {
+			let chunks = chunkString( packetString, this.commSize )
+			for ( let i = 0; i < chunks.length; ++i ) {
+				let newPacket = { uid: packet.uid, chunk: { no: i + 1, of: chunks.length, data: chunks[ i ] } }
+				this.natsServer.publish( socketName, this.strict ? JSON.stringify( await CommPacketer.derive( newPacket ) ) : JSON.stringify( newPacket ) )
+			}
+			this.logger[ this.logLevel ]( { darcon: this.name, nodeID: this.nodeID, sent: { chunks: chunks.length } } )
 		}
 	},
 
