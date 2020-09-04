@@ -97,7 +97,7 @@ Object.assign( Darcon.prototype, {
 				}
 
 				if ( self.entityAppeared )
-					self.a( self, present.entity, present.nodeID ).catch( (err) => { self.logger.darconlog(err) } )
+					self.entityAppeared( self, present.entity, present.nodeID ).catch( (err) => { self.logger.darconlog(err) } )
 			} catch (err) { self.logger.darconlog( err ) }
 		} )
 
