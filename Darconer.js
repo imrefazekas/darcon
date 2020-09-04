@@ -13,6 +13,8 @@ let VERSION = exports.VERSION = JSON.parse( fs.readFileSync( path.join( __dirnam
 
 let { MODE_REQUEST, MODE_INFORM, MODE_DELEGATE, CommPacketer, CommPresencer } = require( './models/Packet' )
 
+let { BaseErrors, ErrorCreator } = require( './util/Errors' )
+
 const HIDDEN_SERVICES_PREFIX = '_'
 const SERVICES_REPORTS = 'darcon_service_reports'
 const UNDEFINED = 'ToBeFilled'
@@ -24,16 +26,6 @@ const OK = 'OK'
 let { Configurator } = require( './models/Configuration' )
 
 let PinoLogger = require('./PinoLogger')
-
-
-const { inherits } = require('util')
-let DarconError = function (message, errorName, errorCode) {
-	this.message = message
-	this.errorName = errorName
-	this.errorCode = errorCode
-	Error.captureStackTrace(this, DarconError)
-}
-inherits(DarconError, Error)
 
 
 function chunkString (str, size) {
@@ -122,7 +114,11 @@ Object.assign( Darcon.prototype, {
 
 			if ( !self.messages[ incoming.uid ] ) return OK
 			self.messages[ incoming.uid ].callback(
-				incoming.comm.error ? new DarconError( incoming.comm.error.message, incoming.comm.error.errorName, incoming.comm.error.errorcode ) : null,
+				incoming.comm.error ? ErrorCreator( {
+					errorCode: incoming.comm.error.errorcode,
+					errorName: incoming.comm.error.errorName,
+					message: incoming.comm.error.message
+				} ) : null,
 				incoming.comm.error ? null : incoming.comm.response
 			)
 		}
@@ -131,8 +127,8 @@ Object.assign( Darcon.prototype, {
 
 			incoming.comm.responderNodeID = self.nodeID
 			try {
-				if (!self.ins[ incoming.comm.entity ]) throw new Error( 'No such entity is present:', incoming.comm.entity )
-				if (!self.ins[ incoming.comm.entity ].entity[ incoming.comm.message ]) throw new Error( 'No such service is present:', incoming.comm.message )
+				if (!self.ins[ incoming.comm.entity ]) throw BaseErrors.NoSuchEntity( { entity: incoming.comm.entity } )
+				if (!self.ins[ incoming.comm.entity ].entity[ incoming.comm.message ]) throw BaseErrors.NoSuchService( { service: incoming.comm.message, entity: incoming.comm.entity } )
 
 				let paramsToPass = incoming.comm.params.concat( [ {
 					async request (to, message, ...params) {
@@ -146,7 +142,9 @@ Object.assign( Darcon.prototype, {
 					},
 					comm: incoming.comm
 				} ] )
-				incoming.comm.response = await self.ins[ incoming.comm.entity ].entity[ incoming.comm.message ]( ...paramsToPass )
+				let response = await self.ins[ incoming.comm.entity ].entity[ incoming.comm.message ]( ...paramsToPass )
+				if (!response) throw BaseErrors.NoReturnValue( { fn: incoming.comm.message, entity: incoming.comm.entity } )
+				incoming.comm.response = response
 			} catch (err) {
 				incoming.comm.error = { message: err.message || err.toString(), code: err.code || err.errorCode || err.errorcode || '-1', errorName: err.errorName || '' }
 			}
@@ -184,19 +182,16 @@ Object.assign( Darcon.prototype, {
 
 		entity.Darcon = this
 
-		// if (entity.request) throw new Error('Entity already has a request function')
 		entity.request = async function (to, message, ...params) {
 			let terms = params[ params.length - 1 ]
 			let rP = params.slice( 0, -1 )
 			return self.innercomm(MODE_REQUEST, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, null, null, ...rP)
 		}
-		// if (entity.inform) throw new Error('Entity already has a inform function')
 		entity.inform = async function (to, message, ...params) {
 			let terms = params[ params.length - 1 ]
 			let rP = params.slice( 0, -1 )
 			return self.innercomm(MODE_INFORM, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, null, null, ...rP)
 		}
-		// if (entity.delegate) throw new Error('Entity already has a delegate function')
 		entity.delegate = async function (to, message, delegateEntity, delegateMessage, ...params) {
 			let terms = params[ params.length - 1 ]
 			let rP = params.slice( 0, -1 )
@@ -375,7 +370,7 @@ Object.assign( Darcon.prototype, {
 		let packetString = this.strict ? JSON.stringify( await CommPacketer.derive( packet ) ) : JSON.stringify( packet )
 
 		if ( packetString.length >= this.maxCommSize )
-			throw new Error( `The packet is exceeded the ${this.maxCommSize}!` )
+			throw BaseErrors.PacketExceeded( { limit: this.maxCommSize } )
 
 		if ( packetString.length < this.commSize ) {
 			this.natsServer.publish( socketName, packetString )
@@ -395,7 +390,7 @@ Object.assign( Darcon.prototype, {
 		let self = this
 
 		if (mode === MODE_DELEGATE && (!delegateEntity || !delegateMessage) )
-			throw new Error( `Delegation attributes must be set when mode is \'${MODE_DELEGATE}\'` )
+			throw BaseErrors.DelegationRequired( { mode: MODE_DELEGATE } )
 
 		let nodeID = this._randomNodeID( entity )
 		let socketName = entity + SEPARATOR + nodeID
