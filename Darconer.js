@@ -117,6 +117,9 @@ let Services = {
 
 			incoming.comm.responderNodeID = self.nodeID
 			try {
+				if (!self.ins[ incoming.comm.entity ]) throw new Error( 'No such entity is present:', incoming.comm.entity )
+				if (!self.ins[ incoming.comm.entity ].entity[ incoming.comm.message ]) throw new Error( 'No such service is present:', incoming.comm.message )
+
 				let paramsToPass = incoming.comm.params.concat( [ {
 					async request (to, message, ...params) {
 						return self.innercomm(MODE_REQUEST, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, ...params)
@@ -151,6 +154,8 @@ let Services = {
 	async publish (...entities) {
 		let self = this
 		for (let entity of entities) {
+			let functions = _.functionNames( entity ).filter( (fnName) => { return !fnName.startsWith( HIDDEN_SERVICES_PREFIX ) } )
+
 			// if (entity.request) throw new Error('Entity already has a request function')
 			entity.request = async function (to, message, ...params) {
 				let terms = params[ params.length - 1 ]
@@ -174,7 +179,7 @@ let Services = {
 				self.ins[ entity.name ] = {
 					name: entity.name,
 					version: entity.version || entity.VERSION || '1.0.0',
-					services: _.functionNames( entity ).filter( (fnName) => { return !fnName.startsWith( HIDDEN_SERVICES_PREFIX ) } ),
+					services: functions,
 					entity
 				}
 

@@ -24,6 +24,8 @@
 	"dependencies": {
 		"assign.js": "^2.8.11",
 		"clerobee": "^1.0.1",
+		"fastify": "^3.3.0",
+		"fastify-websocket": "^2.0.7",
 		"isa.js": "^2.2.15",
 		"nats": "^1.4.12",
 		"proback.js": "^2.1.15",
@@ -34,7 +36,8 @@
 		"@nlv8/signun": "^1.4.0",
 		"chai": "^4.2.0",
 		"pino": "~6",
-		"pino-pretty": "~4"
+		"pino-pretty": "~4",
+		"request": "^2.88.2"
 	},
 	"engines": {
 		"node": ">= 8.0.0"
