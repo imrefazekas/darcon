@@ -97,7 +97,7 @@ Object.assign( Darcon.prototype, {
 				}
 
 				if ( self.entityAppeared )
-					self.entityAppeared( this, present.entity, present.nodeID ).catch( (err) => { self.logger.darconlog(err) } )
+					self.a( self, present.entity, present.nodeID ).catch( (err) => { self.logger.darconlog(err) } )
 			} catch (err) { self.logger.darconlog( err ) }
 		} )
 
@@ -367,7 +367,7 @@ Object.assign( Darcon.prototype, {
 
 			if ( Object.keys( self.presences[entity] ).length === 0 )
 				if ( self.entityDisappeared )
-					self.entityDisappeared( this, name ).catch( (err) => { self.logger.darconlog(err) } )
+					self.entityDisappeared( self, name ).catch( (err) => { self.logger.darconlog(err) } )
 		} )
 	},
 
