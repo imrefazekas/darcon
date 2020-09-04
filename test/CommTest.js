@@ -10,6 +10,8 @@ let clerobee = new Clerobee()
 const Proback = require( 'proback.js' )
 
 async function start () {
+	config.entityAppeared = async function (Darcon, name, nodeID) {
+	}
 	await Darcon.init( config )
 	config.logger = {
 		debug () {},

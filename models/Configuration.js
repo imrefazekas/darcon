@@ -21,7 +21,9 @@ let Configurator = newQuanstructor( 'Configurator', {
 
 	nats: { default: {}, Quanstructor: 'Natser' },
 
-	logger: { validation: VALIDATION_OBJ }
+	logger: { validation: VALIDATION_OBJ },
+
+	entityAppeared: { default: null }
 } )
 
 module.exports = {

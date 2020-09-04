@@ -94,6 +94,8 @@ Object.assign( Darcon.prototype, {
 				self.presences[ present.entity ][ present.nodeID ] = {
 					timestamp: Date.now(), projectVersion: present.projectVersion, entityVersion: present.entityVersion
 				}
+
+				self._entityAppeared( present.entity, present.nodeID ).catch( self.logger.harconlog )
 			} catch (err) { self.logger.darconlog( err ) }
 		} )
 
@@ -101,6 +103,15 @@ Object.assign( Darcon.prototype, {
 			name: GATER,
 			version: VERSION
 		} )
+	},
+
+	_entityAppeared: async function ( name, nodeID ) {
+		console.log('!!!!!!!!!!', name, nodeID)
+
+		if ( this.entityAppeared )
+			await this.entityAppeared( this, name, nodeID )
+
+		return OK
 	},
 
 	async processMessage (incoming) {
