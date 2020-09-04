@@ -101,8 +101,9 @@ Object.assign( Darcon.prototype, {
 		if (config.mortar.enabled) {
 			try {
 				let Mortar = require( './util/Mortar' )
+				self.Mortar = Mortar.newMortar()
 				self.logger.darconlog( null, 'Mortar starting...', {}, 'info' )
-				await self.publish( Mortar.newMortar(), config.mortar )
+				await self.publish( self.Mortar, config.mortar )
 			} catch (err) { self.logger.darconlog( err ) }
 		}
 	},
@@ -282,6 +283,12 @@ Object.assign( Darcon.prototype, {
 				clearInterval( self.keeper )
 			if (self.cleaner)
 				clearInterval( self.cleaner )
+
+			for (let entityRef in self.ins) {
+				let entity = self.ins[entityRef]
+				if (entity.close)
+					entity.close().catch( (err) => { self.logger.darconlog(err) } )
+			}
 
 			try {
 				if ( self.natsServer )
