@@ -14,6 +14,9 @@ module.exports = {
 
 	strict: false,
 
+	commSize: 1000000 / 2,
+	maxCommSize: 5000000 / 2,
+
 	log: {
 		level: process.env.DARCON_LOG_LEVEL || 'info',
 		prettyPrint: process.env.DARCON_LOG_PRETTY || false

@@ -36,6 +36,17 @@ let DarconError = function (message, errorName, errorCode) {
 inherits(DarconError, Error)
 
 
+function chunkString (str, size) {
+	const numChunks = Math.ceil(str.length / size)
+	const chunks = new Array(numChunks)
+
+	for (let i = 0, o = 0; i < numChunks; ++i, o += size) {
+		chunks[i] = str.substr(o, size)
+	}
+
+	return chunks
+}
+
 let Services = {
 	name: UNDEFINED,
 	nodeID: UNDEFINED,
@@ -52,7 +63,6 @@ let Services = {
 		this.name = config.name || 'Daconer'
 		config.logger = config.logger || PinoLogger( this.name, config.log )
 
-		this.strict = !!config.strict
 		assigner.assign( self, await Configurator.derive( config ) )
 
 		this.clerobee = new Clerobee( this.idLength )
@@ -65,6 +75,7 @@ let Services = {
 			name: SERVICES_REPORTS,
 			entity: { name: SERVICES_REPORTS }
 		}
+		this.chunks = {}
 
 		this.reporter = setInterval( () => { self.reportStatus() }, this.reporterInterval )
 		this.keeper = setInterval( () => { self.checkPresence() }, this.keeperInterval )
@@ -130,7 +141,8 @@ let Services = {
 			else {
 				let socketName = incoming.comm.source + SEPARATOR + incoming.comm.sourceNodeID
 				incoming.comm.responseDate = Date.now()
-				self.nats.publish( socketName, JSON.stringify( incoming ) )
+
+				self.sendOut( socketName, incoming )
 			}
 
 			return OK
@@ -139,39 +151,47 @@ let Services = {
 	async publish (...entities) {
 		let self = this
 		for (let entity of entities) {
-			if (entity.request) throw new Error('Entity already has a request function')
+			// if (entity.request) throw new Error('Entity already has a request function')
 			entity.request = async function (to, message, ...params) {
 				let terms = params[ params.length - 1 ]
 				let rP = params.slice( 0, -1 )
 				return self.innercomm(MODE_REQUEST, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, null, null, ...rP)
 			}
-			if (entity.inform) throw new Error('Entity already has a inform function')
+			// if (entity.inform) throw new Error('Entity already has a inform function')
 			entity.inform = async function (to, message, ...params) {
 				let terms = params[ params.length - 1 ]
 				let rP = params.slice( 0, -1 )
 				return self.innercomm(MODE_INFORM, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, null, null, ...rP)
 			}
-			if (entity.delegate) throw new Error('Entity already has a delegate function')
+			// if (entity.delegate) throw new Error('Entity already has a delegate function')
 			entity.delegate = async function (to, message, delegateEntity, delegateMessage, ...params) {
 				let terms = params[ params.length - 1 ]
 				let rP = params.slice( 0, -1 )
 				return self.innercomm(MODE_DELEGATE, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, delegateEntity, delegateMessage, ...rP)
 			}
 
-			if ( !this.ins[ entity.name ] )
-				this.ins[ entity.name ] = {
+			if ( !self.ins[ entity.name ] )
+				self.ins[ entity.name ] = {
 					name: entity.name,
 					version: entity.version || entity.VERSION || '1.0.0',
 					services: _.functionNames( entity ).filter( (fnName) => { return !fnName.startsWith( HIDDEN_SERVICES_PREFIX ) } ),
 					entity
 				}
 
-			await this.innerCreateIn( entity.name, this.nodeID, async function ( message ) {
+			await self.innerCreateIn( entity.name, self.nodeID, async function ( message ) {
 				try {
 					let incoming = self.strict ? await CommPacketer.derive( JSON.parse( message ) ) : JSON.parse( message )
-					self.processMessage( incoming ).catch( (err) => { self.logger.darconlog( err ) } )
+					if ( incoming.chunk && incoming.chunk.no > 0 ) {
+						if (!self.chunks[ incoming.uid ]) self.chunks[ incoming.uid ] = []
+						self.chunks[ incoming.uid ].push( incoming.chunk.data )
+						if ( self.chunks[ incoming.uid ].length === incoming.chunk.of ) {
+							let packaet = self.chunks[ incoming.uid ].sort( (a, b) => { return a.of < b.of } ).reduce( (a, b) => { return a.concat(b) } )
+							delete self.chunks[ incoming.uid ]
+							self.processMessage( JSON.parse( packaet ) ).catch( (err) => { self.logger.darconlog( err ) } )
+						}
+					}
+					else self.processMessage( incoming ).catch( (err) => { self.logger.darconlog( err ) } )
 				} catch (err) {
-					console.error(err)
 					self.logger.darconlog( err )
 				}
 			} )
@@ -185,28 +205,28 @@ let Services = {
 			self.logger.darconlog( null, 'Connecting to NATS:', self.nats.url, 'info' )
 
 			try {
-				self.nats = NATS.connect( self.nats )
+				self.natsServer = NATS.connect( self.nats )
 
-				self.nats.on('connect', function (nc) {
+				self.natsServer.on('connect', function (nc) {
 					self.logger.darconlog( null, 'NATS connection is made', { }, 'warn' )
 					resolve( OK )
 				})
-				self.nats.on('error', (err) => {
+				self.natsServer.on('error', (err) => {
 					self.logger.darconlog( err )
 				} )
-				self.nats.on('close', () => {
+				self.natsServer.on('close', () => {
 					self.logger.darconlog( null, 'NATS connection closed')
 				} )
-				self.nats.on('disconnect', function () {
+				self.natsServer.on('disconnect', function () {
 					self.logger.darconlog( null, 'NATS disconnected')
 				})
 
-				self.nats.on('reconnecting', function () {
+				self.natsServer.on('reconnecting', function () {
 					self.logger.darconlog( null, 'NATS reconnecting...')
 					self.resetup().catch( (err) => { self.logger.darconlog(err) } )
 				})
 
-				self.nats.on('reconnect', function (nc) {
+				self.natsServer.on('reconnect', function (nc) {
 					self.logger.darconlog( null, 'NATS reconnected')
 				})
 
@@ -232,8 +252,8 @@ let Services = {
 				clearInterval( self.cleaner )
 
 			try {
-				if ( self.nats )
-					self.nats.close()
+				if ( self.natsServer )
+					self.natsServer.close()
 				resolve( OK )
 			} catch (err) {
 				reject(err)
@@ -246,9 +266,8 @@ let Services = {
 		let self = this
 
 		let socketName = entityName + (node ? SEPARATOR + node : node)
-		self.nats.subscribe( socketName, (message) => {
+		self.natsServer.subscribe( socketName, (message) => {
 			handler(message).catch( (err) => {
-				console.error(err)
 				self.logger.darconlog(err) } )
 			return OK
 		} )
@@ -266,6 +285,7 @@ let Services = {
 				let entity = self.messages[key].entity
 				let message = self.messages[key].message
 				delete self.messages[ key ]
+				delete self.chunks[ key ]
 				callbackFn( new Error( `Response timeout to ${entity} ${message}` ) )
 			}
 		}
@@ -284,7 +304,7 @@ let Services = {
 					nodeID: self.nodeID,
 					entityVersion: entity.version
 				}
-				self.nats.publish( SERVICES_REPORTS, self.strict ? JSON.stringify( await CommPresencer.derive( report ) ) : JSON.stringify( report ) )
+				self.natsServer.publish( SERVICES_REPORTS, self.strict ? JSON.stringify( await CommPresencer.derive( report ) ) : JSON.stringify( report ) )
 			}
 		} catch ( err ) { self.logger.darconlog( err ) }
 	},
@@ -293,7 +313,7 @@ let Services = {
 		let self = this
 
 		for ( let ref of Object.keys(self.ins) )
-			await this.publish( ref.entity )
+			await this.publish( self.ins[ref].entity )
 
 		return OK
 	},
@@ -308,6 +328,22 @@ let Services = {
 					delete self.presences[entity][node]
 			} )
 		} )
+	},
+
+	async sendOut ( socketName, packet ) {
+		let packetString = this.strict ? JSON.stringify( await CommPacketer.derive( packet ) ) : JSON.stringify( packet )
+
+		if ( packetString.length >= this.maxCommSize )
+			throw new Error( `The packet is exceeded the ${this.maxCommSize}!` )
+
+		if ( packetString.length < this.commSize )
+			return this.natsServer.publish( socketName, packetString )
+
+		let chunks = chunkString( packetString, this.commSize )
+		for ( let i = 0; i < chunks.length; ++i ) {
+			let newPacket = { uid: packet.uid, chunk: { no: i + 1, of: chunks.length, data: chunks[ i ] } }
+			this.natsServer.publish( socketName, this.strict ? JSON.stringify( await CommPacketer.derive( newPacket ) ) : JSON.stringify( newPacket ) )
+		}
 	},
 
 	async innercomm (mode, flowID, processID, source, sourceNodeID, entity, message, delegateEntity, delegateMessage, ...params) {
@@ -342,7 +378,6 @@ let Services = {
 				params
 			}
 		}
-		packet = self.strict ? await CommPacketer.derive( packet ) : packet
 
 		return new Promise( (resolve, reject) => {
 			let callback = function ( err, res ) {
@@ -357,7 +392,11 @@ let Services = {
 				message: packet.comm.message
 			}
 			packet.comm.dispatchDate = Date.now()
-			this.nats.publish( socketName, JSON.stringify( packet ) )
+
+			self.sendOut( socketName, packet ).catch( (err) => {
+				self.logger.darconlog(err)
+				reject(err)
+			} )
 
 			return OK
 

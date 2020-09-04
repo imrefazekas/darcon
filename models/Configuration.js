@@ -1,4 +1,4 @@
-let { newQuanstructor, VALIDATION_STR, VALIDATION_NUM, VALIDATION_OBJ } = require('./Devise')
+let { newQuanstructor, VALIDATION_STR, VALIDATION_NUM, VALIDATION_BOOL, VALIDATION_OBJ } = require('./Devise')
 
 newQuanstructor( 'Natser', {
 	url: { default: 'nats://localhost:4222', validation: VALIDATION_STR }
@@ -13,6 +13,11 @@ let Configurator = newQuanstructor( 'Configurator', {
 
 	maxReconnectAttempts: { default: -1, validation: VALIDATION_NUM },
 	reconnectTimeWait: { default: 250, validation: VALIDATION_NUM },
+
+	strict: { default: false, validation: VALIDATION_BOOL },
+
+	commSize: { default: 1000000 / 2, validation: VALIDATION_NUM },
+	maxCommSize: { default: 2000000 / 2, validation: VALIDATION_NUM },
 
 	nats: { default: {}, Quanstructor: 'Natser' },
 

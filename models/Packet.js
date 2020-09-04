@@ -8,6 +8,12 @@ const MODE_REQUEST = 1
 const MODE_INFORM = 2
 const MODE_DELEGATE = 3
 
+newQuanstructor( 'DarChunk', {
+	no: { default: 0, validation: VALIDATION_NUM },
+	of: { default: 0, validation: VALIDATION_NUM },
+	data: { validation: VALIDATION_STR }
+} )
+
 newQuanstructor( 'DarComm', {
 	mode: { default: MODE_REQUEST, validation: { required: true, element: [ MODE_REQUEST, MODE_INFORM, MODE_DELEGATE ] } },
 
@@ -49,8 +55,10 @@ newQuanstructor( 'DarComm', {
 let CommPacketer = newQuanstructor( 'CommPacket', {
 	uid: { validation: VALIDATION_STR },
 	comm: { Quanstructor: 'DarComm' },
+	chunk: { Quanstructor: 'DarChunk' },
 	async _preserve (obj, projection, options) {
-		obj.uid = obj.comm.uid
+		if (!obj.uid)
+			obj.uid = obj.comm.uid
 		return obj
 	}
 } )
