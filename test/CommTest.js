@@ -1,5 +1,7 @@
 let config = require('../config')
 let Darconer = require( '../Darconer' )
+let Darcon = new Darconer()
+
 let { MODE_REQUEST, MODE_INFORM, MODE_DELEGATE } = require( '../models/Packet' )
 
 const Clerobee = require( 'clerobee' )
@@ -8,7 +10,7 @@ let clerobee = new Clerobee()
 const Proback = require( 'proback.js' )
 
 async function start () {
-	await Darconer.init( config )
+	await Darcon.init( config )
 	config.logger = {
 		debug () {},
 		warn () {},
@@ -17,7 +19,7 @@ async function start () {
 		error () {}
 	}
 
-	return Darconer.publish(
+	return Darcon.publish(
 		{
 			name: 'Marie',
 			version: '2.0.0',
@@ -41,7 +43,7 @@ async function comm () {
 	let time = Date.now()
 	let ps = []
 	for (let i = 0; i < 1; ++i)
-		ps.push( Darconer.comm( MODE_REQUEST, '', '', 'Marie', 'echo', [
+		ps.push( Darcon.comm( MODE_REQUEST, '', '', 'Marie', 'echo', [
 			// clerobee.generateAbcString( 100000 )
 			{'name': {'common': 'Belgium', 'official': 'Kingdom of Belgium', 'native': {'deu': {'official': 'K\u00f6nigreich Belgien', 'common': 'Belgien'}, 'fra': {'official': 'Royaume de Belgique', 'common': 'Belgique'}, 'nld': {'official': 'Koninkrijk Belgi\u00eb', 'common': 'Belgi\u00eb'}}}, 'tld': ['.be'], 'cca2': 'BE', 'ccn3': '056', 'cca3': 'BEL', 'cioc': 'BEL', 'independent': true, 'status': 'officially-assigned', 'currencies': {'EUR': {'name': 'Euro', 'symbol': '\u20ac'}}, 'idd': {'root': '+3', 'suffixes': ['2']}, 'capital': ['Brussels'], 'altSpellings':['BE', 'Belgi\u00eb', 'Belgie', 'Belgien', 'Belgique', 'Kingdom of Belgium', 'Koninkrijk Belgi\u00eb', 'Royaume de Belgique', 'K\u00f6nigreich Belgien'], 'region': 'Europe', 'subregion': 'Western Europe', 'languages': {'deu': 'German', 'fra': 'French', 'nld': 'Dutch'}, 'translations': {'ces': {'official': 'Belgick\u00e9 kr\u00e1lovstv\u00ed', 'common': 'Belgie'}, 'cym': {'official': 'Teyrnas Gwlad Belg', 'common': 'Gwlad Belg'}, 'deu': {'official': 'K\u00f6nigreich Belgien', 'common': 'Belgien'}, 'fra': {'official': 'Royaume de Belgique', 'common': 'Belgique'}, 'hrv': {'official': 'Kraljevina Belgija', 'common': 'Belgija'}, 'ita': {'official': 'Regno del Belgio', 'common': 'Belgio'}, 'jpn': {'official': '\u30d9\u30eb\u30ae\u30fc\u738b\u56fd', 'common': '\u30d9\u30eb\u30ae\u30fc'}, 'nld': {'official': 'Koninkrijk Belgi\u00eb', 'common': 'Belgi\u00eb'}, 'por': {'official': 'Reino da B\u00e9lgica', 'common': 'B\u00e9lgica'}, 'rus': {'official': '\u041a\u043e\u0440\u043e\u043b\u0435\u0432\u0441\u0442\u0432\u043e \u0411\u0435\u043b\u044c\u0433\u0438\u044f', 'common': '\u0411\u0435\u043b\u044c\u0433\u0438\u044f'}, 'slk': {'official': 'Belgick\u00e9 kr\u00e1\u013eovstvo', 'common': 'Belgicko'}, 'spa': {'official': 'Reino de B\u00e9lgica', 'common': 'B\u00e9lgica'}, 'fin': {'official': 'Belgian kuningaskunta', 'common': 'Belgia'}, 'est': {'official': 'Belgia Kuningriik', 'common': 'Belgia'}, 'zho': {'official': '\u6bd4\u5229\u65f6\u738b\u56fd', 'common': '\u6bd4\u5229\u65f6'}, 'pol': {'official': 'Kr\u00f3lestwo Belgii', 'common': 'Belgia'}, 'urd': {'official': '\u0645\u0645\u0644\u06a9\u062a\u0650 \u0628\u0644\u062c\u0626\u06cc\u0645', 'common': '\u0628\u0644\u062c\u0626\u06cc\u0645'}, 'kor': {'official': '\ubca8\uae30\uc5d0 \uc655\uad6d', 'common': '\ubca8\uae30\uc5d0'}, 'per': {'official': '\u067e\u0627\u062f\u0634\u0627\u0647\u06cc \u0628\u0644\u0698\u06cc\u06a9', 'common': '\u0628\u0644\u0698\u06cc\u06a9'}}, 'latlng': [50.83333333, 4], 'landlocked': false, 'borders': ['FRA', 'DEU', 'LUX', 'NLD'], 'area':30528, 'flag': '\ud83c\udde7\ud83c\uddea', 'demonyms': {'eng': {'f': 'Belgian', 'm': 'Belgian'}, 'fra': {'f': 'Belge', 'm': 'Belge'}}}
 			/*
@@ -55,7 +57,7 @@ async function comm () {
 }
 
 async function close () {
-	return Darconer.close()
+	return Darcon.close()
 }
 
 start().then( () => {

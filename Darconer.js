@@ -26,7 +26,7 @@ let { Configurator } = require( './models/Configuration' )
 let PinoLogger = require('./PinoLogger')
 
 
-const {inherits} = require('util')
+const { inherits } = require('util')
 let DarconError = function (message, errorName, errorCode) {
 	this.message = message
 	this.errorName = errorName
@@ -47,7 +47,9 @@ function chunkString (str, size) {
 	return chunks
 }
 
-let Services = {
+function Darcon () {}
+
+Object.assign( Darcon.prototype, {
 	name: UNDEFINED,
 	nodeID: UNDEFINED,
 
@@ -412,6 +414,6 @@ let Services = {
 		return this.innercomm(mode, flowID, processID, GATER, this.nodeID, entity, message, null, null, ...params)
 	}
 
-}
+} )
 
-module.exports = Services
+module.exports = Darcon

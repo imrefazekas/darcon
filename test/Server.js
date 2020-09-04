@@ -1,5 +1,6 @@
 let config = require('../config')
 let Darconer = require( '../Darconer' )
+let Darcon = new Darconer()
 let Server = require( '../server/Server' )
 let { MODE_REQUEST, MODE_INFORM, MODE_DELEGATE } = require( '../models/Packet' )
 
@@ -40,9 +41,9 @@ const DIVISION = 'DIVISION'
 async function darconer () {
 	config.logger = logger
 	config.name = DIVISION
-	await Darconer.init( config )
+	await Darcon.init( config )
 
-	return Darconer.publish(
+	return Darcon.publish(
 		{
 			name: 'Marie',
 			version: '2.0.0',
@@ -64,7 +65,7 @@ async function darconer () {
 
 async function server () {
 	let config = require( '../server/DefaultConfig' )
-	config.Darconer = Darconer
+	config.Darconer = Darcon
 	config.logger = logger
 	await Server.init( config )
 
@@ -99,7 +100,7 @@ async function comm () {
 
 async function close () {
 	await Server.close()
-	return Darconer.close()
+	return Darcon.close()
 }
 
 darconer().then( () => {
