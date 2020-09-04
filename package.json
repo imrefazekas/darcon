@@ -1,6 +1,6 @@
 {
 	"name": "darcon",
-	"version": "1.3.11",
+	"version": "1.3.15",
 	"description": "Simple Messaging/Service Bus for node entities over NatsIO",
 	"keywords": [
 		"messaging",
@@ -27,6 +27,7 @@
 		"fastify": "^3.3.0",
 		"fastify-websocket": "^2.0.7",
 		"isa.js": "^2.2.15",
+		"mkdirp": "^1.0.4",
 		"nats": "^1.4.12",
 		"proback.js": "^2.1.15",
 		"quanstructor": "^0.4.22",

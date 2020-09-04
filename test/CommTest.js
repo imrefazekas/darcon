@@ -8,9 +8,14 @@ const Clerobee = require( 'clerobee' )
 let clerobee = new Clerobee()
 
 const Proback = require( 'proback.js' )
+const path = require( 'path' )
 
 async function start () {
 	config.entityAppeared = async function (Darcon, name, nodeID) {
+	}
+	config.mortar = {
+		enabled: true,
+		folder: path.join( __dirname, 'bus' )
 	}
 	await Darcon.init( config )
 	config.logger = {

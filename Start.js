@@ -2,9 +2,10 @@ let config = require('./config')
 
 async function start () {
 	let Darconer = require( './Darconer' )
-	await Darconer.init( config )
+	let Darcon = new Darconer()
+	await Darcon.init( config )
 
-	return Darconer.publish(
+	return Darcon.publish(
 		{
 			name: 'Marie',
 			version: '2.0.0',

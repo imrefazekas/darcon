@@ -65,7 +65,8 @@ Object.assign( Darcon.prototype, {
 		this.name = config.name || 'Daconer'
 		config.logger = config.logger || PinoLogger( this.name, config.log )
 
-		assigner.assign( self, await Configurator.derive( config ) )
+		config = await Configurator.derive( config )
+		assigner.assign( self, config )
 
 		this.clerobee = new Clerobee( this.idLength )
 		this.nodeID = this.clerobee.generate( ),
@@ -95,7 +96,8 @@ Object.assign( Darcon.prototype, {
 					timestamp: Date.now(), projectVersion: present.projectVersion, entityVersion: present.entityVersion
 				}
 
-				self._entityAppeared( present.entity, present.nodeID ).catch( self.logger.harconlog )
+				if ( self.entityAppeared )
+					self.entityAppeared( this, present.entity, present.nodeID ).catch( (err) => { self.logger.harconlog(err) } )
 			} catch (err) { self.logger.darconlog( err ) }
 		} )
 
@@ -103,13 +105,14 @@ Object.assign( Darcon.prototype, {
 			name: GATER,
 			version: VERSION
 		} )
-	},
 
-	_entityAppeared: async function ( name, nodeID ) {
-		if ( this.entityAppeared )
-			await this.entityAppeared( this, name, nodeID )
-
-		return OK
+		if (config.mortar.enabled) {
+			try {
+				let Mortar = require( './util/Mortar' )
+				self.logger.darconlog( null, 'Mortar starting...', {}, 'info' )
+				await self.publish( Mortar.newMortar(), config.mortar )
+			} catch (err) { self.logger.darconlog( err ) }
+		}
 	},
 
 	async processMessage (incoming) {
@@ -167,14 +170,19 @@ Object.assign( Darcon.prototype, {
 		return self.ins[ name ]
 	},
 
+	async unpublish (name) {
+		if ( this.ins[ name ] ) {
+			let socketName = name + SEPARATOR + this.nodeID
+			this.natsServer.unsubscribe( socketName )
+			delete this.ins[ name ]
+		}
+	},
 	async publish (entity, config = {}) {
 		let self = this
 
-		let cfg = assigner.assign( {}, this.entities[ entity.name ] || {}, config.millieu || {} )
-		if (entity.init)
-			await entity.init( cfg )
-
 		let functions = _.functionNames( entity ).filter( (fnName) => { return !fnName.startsWith( HIDDEN_SERVICES_PREFIX ) } )
+
+		entity.Darcon = this
 
 		// if (entity.request) throw new Error('Entity already has a request function')
 		entity.request = async function (to, message, ...params) {
@@ -194,7 +202,6 @@ Object.assign( Darcon.prototype, {
 			let rP = params.slice( 0, -1 )
 			return self.innercomm(MODE_DELEGATE, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, delegateEntity, delegateMessage, ...rP)
 		}
-
 		if ( !self.ins[ entity.name ] )
 			self.ins[ entity.name ] = {
 				name: entity.name,
@@ -202,6 +209,12 @@ Object.assign( Darcon.prototype, {
 				services: functions,
 				entity
 			}
+
+
+		let cfg = assigner.assign( { logger: self.logger }, config, this.entities[ entity.name ] || {}, config.millieu || {} )
+		if (entity.init)
+			await entity.init( cfg )
+
 
 		await self.innerCreateIn( entity.name, self.nodeID, async function ( message ) {
 			try {
@@ -351,6 +364,10 @@ Object.assign( Darcon.prototype, {
 				if ( self.presences[entity][node].timestamp <= timestamp - self.keeperInterval )
 					delete self.presences[entity][node]
 			} )
+
+			if ( Object.keys( self.presences[entity] ).length === 0 )
+				if ( self.entityDisappeared )
+					self.entityDisappeared( this, name ).catch( (err) => { self.logger.harconlog(err) } )
 		} )
 	},
 

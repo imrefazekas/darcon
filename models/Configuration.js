@@ -1,7 +1,15 @@
-let { newQuanstructor, VALIDATION_STR, VALIDATION_NUM, VALIDATION_BOOL, VALIDATION_ARR, VALIDATION_OBJ } = require('./Devise')
+let { newQuanstructor, VALIDATION_STR, VALIDATION_NUM, VALIDATION_BOOL, VALIDATION_OBJ } = require('./Devise')
 
 newQuanstructor( 'Natser', {
 	url: { default: 'nats://localhost:4222', validation: VALIDATION_STR }
+} )
+
+newQuanstructor( 'Mortar', {
+	enabled: { default: false, validation: VALIDATION_BOOL },
+	folder: { default: '', validation: VALIDATION_STR },
+	liveReload: { default: false, validation: VALIDATION_BOOL },
+	liveReloadTimeout: { default: 5000, validation: VALIDATION_NUM },
+	pattern: { default: '', validation: VALIDATION_STR }
 } )
 
 let Configurator = newQuanstructor( 'Configurator', {
@@ -19,14 +27,17 @@ let Configurator = newQuanstructor( 'Configurator', {
 	commSize: { default: 1000000 / 2, validation: VALIDATION_NUM },
 	maxCommSize: { default: 2000000 / 2, validation: VALIDATION_NUM },
 
-	nats: { default: {}, Quanstructor: 'Natser' },
+	nats: { Quanstructor: 'Natser' },
 
 	logger: { validation: VALIDATION_OBJ },
 
 	entityAppeared: { default: null },
+	entityDisappeared: { default: null },
 
 	entities: { default: {}, validation: VALIDATION_OBJ },
-	millieu: { default: {}, validation: VALIDATION_OBJ }
+	millieu: { default: {}, validation: VALIDATION_OBJ },
+
+	mortar: { Quanstructor: 'Mortar' }
 } )
 
 module.exports = {
