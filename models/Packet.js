@@ -4,9 +4,9 @@ let VERSION = exports.VERSION = JSON.parse( fs.readFileSync( path.join( process.
 
 let { newQuanstructor, VALIDATION_STR, VALIDATION_NUM, VALIDATION_OBJ, VALIDATION_ARR, NOREQ } = require('./Devise')
 
-const MODE_REQUEST = 1
-const MODE_INFORM = 2
-const MODE_DELEGATE = 3
+const MODE_REQUEST = 'R'
+const MODE_INFORM = 'I'
+const MODE_DELEGATE = 'D'
 
 newQuanstructor( 'DarChunk', {
 	no: { default: 0, validation: VALIDATION_NUM },

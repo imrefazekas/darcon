@@ -111,7 +111,7 @@ Object.assign( Darcon.prototype, {
 
 	async processMessage (incoming) {
 		let self = this
-		if ( incoming.comm.response || incoming.comm.error ) {
+		if ( defined(incoming.comm.response) || incoming.comm.error ) {
 			incoming.comm.receptionDate = Date.now()
 
 			if ( !self.messages[ incoming.uid ] ) return OK
@@ -302,7 +302,6 @@ Object.assign( Darcon.prototype, {
 		} )
 	},
 
-
 	async innerCreateIn ( entityName, node, handler ) {
 		let self = this
 
@@ -313,7 +312,7 @@ Object.assign( Darcon.prototype, {
 			return OK
 		} )
 
-		self.logger.darconlog( null, 'NATS SUBSCRIBE is made.', { entityName, node }, 'info' )
+		self.logger.darconlog( null, 'NATS SUBSCRIBE is made.', { socketName, node }, 'info' )
 	},
 
 	async cleanupMessages () {
