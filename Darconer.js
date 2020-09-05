@@ -265,10 +265,10 @@ Object.assign( Darcon.prototype, {
 					self.logger.darconlog( null, 'NATS reconnected')
 				})
 
-				if ( self.tolerance > 0 ) {
+				if ( self.reponseTolerance > 0 ) {
 					self.cleaner = setInterval( function () {
 						self.cleanupMessages()
-					}, self.tolerance )
+					}, self.reponseTolerance )
 				}
 			} catch (err) { reject(err) }
 		} )
@@ -320,13 +320,13 @@ Object.assign( Darcon.prototype, {
 
 		let time = Date.now()
 		for ( let key of Object.keys( self.messages ) ) {
-			if ( time - self.messages[key].timestamp > self.tolerance ) {
+			if ( time - self.messages[key].timestamp > self.reponseTolerance ) {
 				let callbackFn = self.messages[key].callback
 				let entity = self.messages[key].entity
 				let message = self.messages[key].message
 				delete self.messages[ key ]
 				delete self.chunks[ key ]
-				callbackFn( BaseErrors.RequestTimeout( { entity, message, tolerance: self.tolerance } ) )
+				callbackFn( BaseErrors.RequestTimeout( { entity, message, tolerance: self.reponseTolerance } ) )
 			}
 		}
 	},

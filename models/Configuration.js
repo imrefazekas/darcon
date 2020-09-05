@@ -17,9 +17,10 @@ let Configurator = newQuanstructor( 'Configurator', {
 
 	logLevel: { default: 'trace', validation: VALIDATION_STR },
 
-	tolerance: { default: 2000, validation: VALIDATION_NUM },
-	reporterInterval: { default: 2000, validation: VALIDATION_NUM },
-	keeperInterval: { default: 3000, validation: VALIDATION_NUM },
+	reponseTolerance: { default: 5000, validation: VALIDATION_NUM },
+
+	reporterInterval: { default: 5000, validation: VALIDATION_NUM },
+	keeperInterval: { default: 8000, validation: VALIDATION_NUM },
 
 	maxReconnectAttempts: { default: -1, validation: VALIDATION_NUM },
 	reconnectTimeWait: { default: 250, validation: VALIDATION_NUM },
