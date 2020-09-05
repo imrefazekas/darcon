@@ -24,6 +24,7 @@ const GATER = 'Gater'
 const OK = 'OK'
 
 let { Configurator } = require( './models/Configuration' )
+let { defined } = require( './util/Helper' )
 
 let PinoLogger = require('./PinoLogger')
 
@@ -144,7 +145,7 @@ Object.assign( Darcon.prototype, {
 					comm: incoming.comm
 				} ] )
 				let response = await self.ins[ incoming.comm.entity ].entity[ incoming.comm.message ]( ...paramsToPass )
-				if (!response) throw BaseErrors.NoReturnValue( { fn: incoming.comm.message, entity: incoming.comm.entity } )
+				if (!defined(response)) throw BaseErrors.NoReturnValue( { fn: incoming.comm.message, entity: incoming.comm.entity } )
 				incoming.comm.response = response
 			} catch (err) {
 				incoming.comm.error = { message: err.message || err.toString(), code: err.code || err.errorCode || err.errorcode || '-1', errorName: err.errorName || '' }
