@@ -326,7 +326,7 @@ Object.assign( Darcon.prototype, {
 				let message = self.messages[key].message
 				delete self.messages[ key ]
 				delete self.chunks[ key ]
-				callbackFn( new Error( `Response timeout to ${entity}:${message}` ) )
+				callbackFn( BaseErrors.RequestTimeout( { entity, message, tolerance: self.tolerance } ) )
 			}
 		}
 	},

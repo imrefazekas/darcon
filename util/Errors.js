@@ -73,6 +73,12 @@ let BaseErrors = {
 		errorCode: 66004,
 		errorName: 'NoSuchService',
 		message: 'No {service} is present at {entity}'
+	} ),
+
+	RequestTimeout: ErrorCreator( {
+		errorCode: 66005,
+		errorName: 'RequestTimeout',
+		message: 'Response {tolerance}ms timeout to {entity}:{message}'
 	} )
 
 }
