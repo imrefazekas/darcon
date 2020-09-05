@@ -119,7 +119,7 @@ Object.assign( Darcon.prototype, {
 					errorCode: incoming.comm.error.errorcode,
 					errorName: incoming.comm.error.errorName,
 					message: incoming.comm.error.message
-				} ) : null,
+				} )() : null,
 				incoming.comm.error ? null : incoming.comm.response
 			)
 		}
