@@ -131,7 +131,7 @@ Object.assign( Darcon.prototype, {
 				if (!self.ins[ incoming.comm.entity ]) throw BaseErrors.NoSuchEntity( { entity: incoming.comm.entity } )
 				if (!self.ins[ incoming.comm.entity ].entity[ incoming.comm.message ]) throw BaseErrors.NoSuchService( { service: incoming.comm.message, entity: incoming.comm.entity } )
 
-				let paramsToPass = incoming.comm.params.concat( [ {
+				let paramsToPass = assigner.cloneObject( incoming.comm.params ).concat( [ {
 					async request (to, message, ...params) {
 						return self.innercomm(MODE_REQUEST, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, ...params)
 					},
