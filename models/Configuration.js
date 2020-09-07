@@ -20,7 +20,8 @@ let Configurator = newQuanstructor( 'Configurator', {
 	reponseTolerance: { default: 5000, validation: VALIDATION_NUM },
 
 	reporterInterval: { default: 5000, validation: VALIDATION_NUM },
-	keeperInterval: { default: 8000, validation: VALIDATION_NUM },
+
+	keeperInterval: { default: 15000, validation: VALIDATION_NUM },
 
 	maxReconnectAttempts: { default: -1, validation: VALIDATION_NUM },
 	reconnectTimeWait: { default: 250, validation: VALIDATION_NUM },

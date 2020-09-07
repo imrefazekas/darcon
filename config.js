@@ -1,9 +1,10 @@
 module.exports = {
 	idLength: 16,
-	reporterInterval: 2000,
-	keeperInterval: 3000,
 
-	reponseTolerance: 10000,
+	reporterInterval: 5000,
+	keeperInterval: 15000,
+
+	reponseTolerance: 5000,
 
 	maxReconnectAttempts: -1,
 	reconnectTimeWait: 250,

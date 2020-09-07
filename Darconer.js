@@ -47,10 +47,11 @@ Object.assign( Darcon.prototype, {
 	nodeID: UNDEFINED,
 
 	_randomNodeID ( entity ) {
-		if ( !this.presences || !this.presences[ entity ] )
-			return null
+		if ( !this.presences || !this.presences[ entity ] ) throw BaseErrors.NoSuchEntity( { entity } )
 
 		let ids = Object.keys( this.presences[ entity ] )
+		if ( ids.length === 0 ) throw BaseErrors.NoSuchEntity( { entity } )
+
 		let id = ids[ Math.floor( Math.random( ) * ids.length ) ]
 		return id
 	},
@@ -84,6 +85,11 @@ Object.assign( Darcon.prototype, {
 
 				if ( !self.presences[ present.entity ] )
 					self.presences[ present.entity ] = {}
+
+				if ( self.presences[ present.entity ][ present.nodeID ] ) {
+					self.presences[ present.entity ][ present.nodeID ].timestamp = Date.now()
+					return OK
+				}
 
 				self.presences[ present.entity ][ present.nodeID ] = {
 					timestamp: Date.now(), projectVersion: present.projectVersion, entityVersion: present.entityVersion
@@ -342,7 +348,8 @@ Object.assign( Darcon.prototype, {
 				let report = {
 					entity: entity.name,
 					nodeID: self.nodeID,
-					entityVersion: entity.version
+					entityVersion: entity.version,
+					projectVersion: VERSION
 				}
 				self.natsServer.publish( SERVICES_REPORTS, self.strict ? JSON.stringify( await CommPresencer.derive( report ) ) : JSON.stringify( report ) )
 			}
