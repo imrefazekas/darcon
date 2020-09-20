@@ -18,7 +18,7 @@ async function start () {
 		folder: path.join( __dirname, 'bus' )
 	}
 	config.logger = {
-		debug () { },
+		debug () { console.log( arguments ) },
 		warn () { },
 		trace (obj) { },
 		info () { },

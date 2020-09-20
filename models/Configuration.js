@@ -15,7 +15,7 @@ newQuanstructor( 'Mortar', {
 let Configurator = newQuanstructor( 'Configurator', {
 	idLength: { default: 16, validation: VALIDATION_NUM },
 
-	logLevel: { default: 'trace', validation: VALIDATION_STR },
+	logLevel: { default: process.env.DARCON_LOG_LEVEL || 'debug', validation: VALIDATION_STR },
 
 	reponseTolerance: { default: 5000, validation: VALIDATION_NUM },
 

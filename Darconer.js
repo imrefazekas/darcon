@@ -57,7 +57,7 @@ Object.assign( Darcon.prototype, {
 	},
 	async init (config = {}) { let self = this
 		this.name = config.name || 'Daconer'
-		config.logger = config.logger || PinoLogger( this.name, config.log )
+		config.logger = config.logger || PinoLogger( this.name, { level: this.logLevel, prettyPrint: process.env.DARCON_LOG_PRETTY || false } )
 
 		config = await Configurator.derive( config )
 		assigner.assign( self, config )
@@ -117,6 +117,7 @@ Object.assign( Darcon.prototype, {
 
 	async processMessage (incoming) {
 		let self = this
+
 		if ( defined(incoming.comm.response) || incoming.comm.error ) {
 			incoming.comm.receptionDate = Date.now()
 
@@ -218,11 +219,17 @@ Object.assign( Darcon.prototype, {
 					self.chunks[ incoming.uid ].push( incoming.chunk.data )
 					if ( self.chunks[ incoming.uid ].length === incoming.chunk.of ) {
 						let packaet = self.chunks[ incoming.uid ].sort( (a, b) => { return a.of < b.of } ).reduce( (a, b) => { return a.concat(b) } )
+						let chLength = self.chunks[ incoming.uid ]
 						delete self.chunks[ incoming.uid ]
+
+						self.logger[ self.logLevel ]( { darcon: self.name, nodeID: self.nodeID, received: { chunks: chLength } } )
 						self.processMessage( JSON.parse( packaet ) ).catch( (err) => { self.logger.darconlog( err ) } )
 					}
 				}
-				else self.processMessage( incoming ).catch( (err) => { self.logger.darconlog( err ) } )
+				else {
+					self.logger[ self.logLevel ]( { darcon: self.name, nodeID: self.nodeID, received: incoming } )
+					self.processMessage( incoming ).catch( (err) => { self.logger.darconlog( err ) } )
+				}
 			} catch (err) {
 				self.logger.darconlog( err )
 			}
