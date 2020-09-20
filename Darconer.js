@@ -222,12 +222,13 @@ Object.assign( Darcon.prototype, {
 						let chLength = self.chunks[ incoming.uid ]
 						delete self.chunks[ incoming.uid ]
 
-						self.logger[ self.logLevel ]( { darcon: self.name, nodeID: self.nodeID, received: { chunks: chLength } } )
-						self.processMessage( JSON.parse( packaet ) ).catch( (err) => { self.logger.darconlog( err ) } )
+						let realPacket = JSON.parse( packaet )
+						self.logger[ self.logLevel ]( { darcon: self.name, nodeID: self.nodeID, uid: realPacket.uid, flowID: realPacket.comm.flowID, processID: realPacket.comm.processID, received: { chunks: chLength } } )
+						self.processMessage( realPacket ).catch( (err) => { self.logger.darconlog( err ) } )
 					}
 				}
 				else {
-					self.logger[ self.logLevel ]( { darcon: self.name, nodeID: self.nodeID, received: incoming } )
+					self.logger[ self.logLevel ]( { darcon: self.name, nodeID: self.nodeID, uid: incoming.uid, flowID: incoming.comm.flowID, processID: incoming.comm.processID, received: incoming } )
 					self.processMessage( incoming ).catch( (err) => { self.logger.darconlog( err ) } )
 				}
 			} catch (err) {
@@ -396,7 +397,7 @@ Object.assign( Darcon.prototype, {
 
 		if ( packetString.length < this.commSize ) {
 			this.natsServer.publish( socketName, packetString )
-			this.logger[ this.logLevel ]( { darcon: this.name, nodeID: this.nodeID, sent: packet } )
+			this.logger[ this.logLevel ]( { darcon: this.name, nodeID: this.nodeID, packet: packet.uid, flowID: packet.comm.flowID, processID: packet.comm.processID, sent: packet } )
 		}
 		else {
 			let chunks = chunkString( packetString, this.commSize )
@@ -404,7 +405,7 @@ Object.assign( Darcon.prototype, {
 				let newPacket = { uid: packet.uid, chunk: { no: i + 1, of: chunks.length, data: chunks[ i ] } }
 				this.natsServer.publish( socketName, this.strict ? JSON.stringify( await CommPacketer.derive( newPacket ) ) : JSON.stringify( newPacket ) )
 			}
-			this.logger[ this.logLevel ]( { darcon: this.name, nodeID: this.nodeID, sent: { chunks: chunks.length } } )
+			this.logger[ this.logLevel ]( { darcon: this.name, nodeID: this.nodeID, packet: packet.uid, flowID: packet.comm.flowID, processID: packet.comm.processID, sent: { chunks: chunks.length } } )
 		}
 	},
 
