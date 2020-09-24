@@ -105,6 +105,11 @@ Object.assign( Darcon.prototype, {
 			version: VERSION
 		} )
 
+		this.Validator = config.Validator
+		if ( this.Validator ) {
+			self.logger.darconlog( null, 'Validator added...', { name: this.Validator.name, version: this.Validator.version }, 'info' )
+		}
+
 		if (config.mortar.enabled) {
 			try {
 				let Mortar = require( './util/Mortar' )
@@ -113,6 +118,13 @@ Object.assign( Darcon.prototype, {
 				await self.publish( self.Mortar, config.mortar )
 			} catch (err) { self.logger.darconlog( err ) }
 		}
+	},
+
+	async _validateMessage (message) {
+		if (this.Validator)
+			await this.Validator.validateMessage( message )
+
+		return OK
 	},
 
 	async processMessage (incoming) {
@@ -138,6 +150,8 @@ Object.assign( Darcon.prototype, {
 			try {
 				if (!self.ins[ incoming.comm.entity ]) throw BaseErrors.NoSuchEntity( { entity: incoming.comm.entity } )
 				if (!self.ins[ incoming.comm.entity ].entity[ incoming.comm.message ]) throw BaseErrors.NoSuchService( { service: incoming.comm.message, entity: incoming.comm.entity } )
+
+				await self._validateMessage( incoming.comm )
 
 				let paramsToPass = assigner.cloneObject( incoming.comm.params ).concat( [ {
 					flowID: incoming.comm.flowID,
@@ -311,6 +325,7 @@ Object.assign( Darcon.prototype, {
 			try {
 				if ( self.natsServer )
 					self.natsServer.close()
+
 				resolve( OK )
 			} catch (err) {
 				reject(err)
