@@ -107,6 +107,7 @@ Object.assign( Darcon.prototype, {
 
 		this.Validator = config.Validator
 		if ( this.Validator ) {
+			if ( _.isString( this.Validator ) ) this.Validator = require( this.Validator )
 			self.logger.darconlog( null, 'Validator added...', { name: this.Validator.name, version: this.Validator.version }, 'info' )
 		}
 
