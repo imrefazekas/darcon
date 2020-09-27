@@ -29,9 +29,9 @@ module.exports = {
 
 
 		if (self.config.rest)
-			await Radiation.rester( config.Darconer, this.fastify, assigner.assign( {}, self.config.rest, { logger: self.logger } ) )
+			await Radiation.rester( config.Darconer, this.fastify, assigner.assign( {}, self.config.rest, { logger: self.logger } ), fastifyConfig )
 		if (self.config.ws)
-			await Radiation.ws( config.Darconer, this.fastify, assigner.assign( {}, self.config.ws, { logger: self.logger } ) )
+			await Radiation.ws( config.Darconer, this.fastify, assigner.assign( {}, self.config.ws, { logger: self.logger } ), fastifyConfig )
 
 
 		if (fastifyConfig.routes)

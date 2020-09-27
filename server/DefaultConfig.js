@@ -9,7 +9,8 @@ module.exports = {
 	fastify: {
 		defaultPlugins (fastify) { },
 		plugins (fastify) { },
-		routes (fastify) { }
+		routes (fastify) { },
+		preValidation (path) { return {} }
 	},
 
 	printRoutes: true,
