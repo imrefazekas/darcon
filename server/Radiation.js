@@ -19,7 +19,7 @@ function extractRequest ( request, options = {} ) {
 module.exports = {
 	rester ( Darcon, fastify, options = {}, fastifyConfig = {} ) {
 		if ( options.standard ) {
-			fastify.post( '/:division/:entity/:message', fastifyConfig.preValidation ? fastifyConfig.preValidation( '/:division/:entity/:message' ) : {}, async function (request, reply) {
+			fastify.post( '/:division/:entity/:message', fastifyConfig.preValidation ? fastifyConfig.preValidation( fastify, '/:division/:entity/:message' ) : {}, async function (request, reply) {
 				let newRequest = extractRequest( request, options )
 				let content = newRequest.body
 
@@ -36,7 +36,7 @@ module.exports = {
 		}
 
 		if ( options.darcon ) {
-			fastify.post( options.darcon, fastifyConfig.preValidation ? fastifyConfig.preValidation( '/:division/:entity/:message' ) : {}, async function (request, reply) {
+			fastify.post( options.darcon, fastifyConfig.preValidation ? fastifyConfig.preValidation( fastify, '/:division/:entity/:message' ) : {}, async function (request, reply) {
 				let newRequest = extractRequest( request, options )
 				let content = newRequest.body
 
