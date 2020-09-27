@@ -7,6 +7,7 @@ module.exports = {
 	Darconer: null,
 	logger: null,
 	fastify: {
+		apiPrefix: '',
 		defaultPlugins (fastify) { },
 		plugins (fastify) { },
 		routes (fastify) { },
