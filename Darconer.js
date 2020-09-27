@@ -47,7 +47,11 @@ Object.assign( Darcon.prototype, {
 	nodeID: UNDEFINED,
 
 	_randomNodeID ( entity ) {
-		if ( !this.presences || !this.presences[ entity ] ) throw BaseErrors.NoSuchEntity( { entity } )
+		if ( this.ins && this.ins[ entity ] ) return this.nodeID
+
+		if ( !this.presences || !this.presences[ entity ] ) {
+			throw BaseErrors.NoSuchEntity( { entity } )
+		}
 
 		let ids = Object.keys( this.presences[ entity ] )
 		if ( ids.length === 0 ) throw BaseErrors.NoSuchEntity( { entity } )

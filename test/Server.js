@@ -61,7 +61,6 @@ async function darconer () {
 				return params.slice(0, -1)
 			}
 		}
-
 	)
 }
 

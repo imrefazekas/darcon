@@ -63,7 +63,7 @@ module.exports = {
 	ws ( Darcon, fastify, options = {} ) {
 		if (!options.darcon) return
 
-		async function processSocketData(socket, data) {
+		async function processSocketData (socket, data) {
 			let res = await Darcon.comm( data.mode || MODE_REQUEST, data.flowID, data.processID, data.entity, data.message, ...data.params )
 			socket.send( JSON.stringify( { id: data.id, result: res } ) )
 		}
