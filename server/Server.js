@@ -1,3 +1,5 @@
+const _ = require('isa.js')
+
 let Assigner = require('assign.js')
 let assigner = new Assigner()
 
@@ -11,6 +13,9 @@ module.exports = {
 
 		self.logger = config.logger
 		self.config = config
+
+		if (_.isFunction(config.fastify))
+			config.fastify = config.fastify( config )
 
 		let fastifyConfig = assigner.assign( {
 			logger: self.logger || true
