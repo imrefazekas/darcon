@@ -5,7 +5,7 @@ const _ = require( 'isa.js' )
 let { MODE_REQUEST } = require( '../models/Packet' )
 
 function extractRequest ( request, options = {} ) {
-	let newRequest = _.pick(request, ['headers', 'body', 'query', 'params'])
+	let newRequest = _.pick(request, ['headers', 'body', 'query', 'params', 'packet'])
 	newRequest.remoteAddress = request.raw.ip
 	newRequest.hostname = request.raw.hostname
 	newRequest.url = request.raw.url
@@ -22,7 +22,7 @@ module.exports = {
 		if ( options.standard ) {
 			fastify.post( prefix + '/:division/:entity/:message', fastifyConfig.preValidation ? fastifyConfig.preValidation( fastify, '/:division/:entity/:message' ) : {}, async function (request, reply) {
 				let newRequest = extractRequest( request, options )
-				let content = newRequest.body
+				let content = newRequest.packet || newRequest.body
 
 				let ps = newRequest.params
 				try {
@@ -39,7 +39,7 @@ module.exports = {
 		if ( options.darcon ) {
 			fastify.post( prefix + options.darcon, fastifyConfig.preValidation ? fastifyConfig.preValidation( fastify, '/:division/:entity/:message' ) : {}, async function (request, reply) {
 				let newRequest = extractRequest( request, options )
-				let content = newRequest.body
+				let content = newRequest.packet || newRequest.body
 
 				if ( content.division !== Darcon.name )
 					throw new Error('Invalid request')
@@ -65,6 +65,7 @@ module.exports = {
 		if (!options.darcon) return
 
 		async function processSocketData (socket, data) {
+			if (fastifyConfig.wsPreprocess) await fastifyConfig.wsPreprocess( socket, data )
 			let res = await Darcon.comm( data.mode || MODE_REQUEST, data.flowID, data.processID, data.entity, data.message, ...data.params )
 			socket.send( JSON.stringify( { id: data.id, result: res } ) )
 		}
