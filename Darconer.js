@@ -158,20 +158,21 @@ Object.assign( Darcon.prototype, {
 
 				await self._validateMessage( incoming.comm )
 
-				let paramsToPass = assigner.cloneObject( incoming.comm.params ).concat( [ {
+				let terms = incoming.comm.terms || {}
+				let paramsToPass = assigner.cloneObject( incoming.comm.params ).concat( [ assigner.assign( {}, terms, {
 					flowID: incoming.comm.flowID,
 					processID: incoming.comm.processID,
 					async request (to, message, ...params) {
-						return self.innercomm(MODE_REQUEST, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, ...params)
+						return self.innercomm(MODE_REQUEST, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, params, terms)
 					},
 					async inform (to, message, ...params) {
-						return self.innercomm(MODE_INFORM, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, ...params)
+						return self.innercomm(MODE_INFORM, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, params, terms)
 					},
 					async delegate (to, message, delegateEntity, delegateMessage, ...params) {
-						return self.innercomm(MODE_DELEGATE, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, delegateEntity, delegateMessage, ...params)
+						return self.innercomm(MODE_DELEGATE, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, delegateEntity, delegateMessage, params, terms)
 					},
 					comm: incoming.comm
-				} ] )
+				} ) ] )
 				let response = await self.ins[ incoming.comm.entity ].entity[ incoming.comm.message ]( ...paramsToPass )
 				if (!defined(response)) throw BaseErrors.NoReturnValue( { fn: incoming.comm.message, entity: incoming.comm.entity } )
 				incoming.comm.response = response
@@ -215,17 +216,17 @@ Object.assign( Darcon.prototype, {
 		entity.request = async function (to, message, ...params) {
 			let terms = params[ params.length - 1 ]
 			let rP = params.slice( 0, -1 )
-			return self.innercomm(MODE_REQUEST, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, null, null, ...rP)
+			return self.innercomm(MODE_REQUEST, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, null, null, rP, terms)
 		}
 		entity.inform = async function (to, message, ...params) {
 			let terms = params[ params.length - 1 ]
 			let rP = params.slice( 0, -1 )
-			return self.innercomm(MODE_INFORM, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, null, null, ...rP)
+			return self.innercomm(MODE_INFORM, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, null, null, rP, terms)
 		}
 		entity.delegate = async function (to, message, delegateEntity, delegateMessage, ...params) {
 			let terms = params[ params.length - 1 ]
 			let rP = params.slice( 0, -1 )
-			return self.innercomm(MODE_DELEGATE, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, delegateEntity, delegateMessage, ...rP)
+			return self.innercomm(MODE_DELEGATE, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, delegateEntity, delegateMessage, rP, terms)
 		}
 
 		let cfg = assigner.assign( { logger: self.logger }, config, this.entities[ entity.name ] || {}, config.millieu || {} )
@@ -431,7 +432,7 @@ Object.assign( Darcon.prototype, {
 		}
 	},
 
-	async innercomm (mode, flowID, processID, source, sourceNodeID, entity, message, delegateEntity, delegateMessage, ...params) {
+	async innercomm (mode, flowID, processID, source, sourceNodeID, entity, message, delegateEntity, delegateMessage, params, terms = {}) {
 		let self = this
 
 		if (mode === MODE_DELEGATE && (!delegateEntity || !delegateMessage) )
@@ -460,7 +461,9 @@ Object.assign( Darcon.prototype, {
 				message,
 				delegateEntity, delegateMessage,
 
-				params
+				params,
+
+				terms
 			}
 		}
 
@@ -488,8 +491,8 @@ Object.assign( Darcon.prototype, {
 		} )
 	},
 
-	async comm (mode, flowID, processID, entity, message, ...params) {
-		return this.innercomm(mode, flowID, processID, GATER, this.nodeID, entity, message, null, null, ...params)
+	async comm (mode, flowID, processID, entity, message, params, terms) {
+		return this.innercomm(mode, flowID, processID, GATER, this.nodeID, entity, message, null, null, params, terms)
 	}
 
 } )

@@ -1,4 +1,4 @@
-let attributesRespected = [ 'user', 'files' ]
+let attributesRespected = [ 'user', 'files', 'agent' ]
 
 module.exports = {
 	port: 8080,
@@ -22,7 +22,8 @@ module.exports = {
 	rest: {
 		standard: true,
 		darcon: '/DarconRPC',
-		attributesRespected
+		attributesRespected,
+		attributesToPass: []
 		// async gatekeeper ( request, flowID, processID, entity, message, params ) {},
 		// async conformer ( request, flowID, processID, entity, message, res ) {}
 	},

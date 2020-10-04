@@ -27,12 +27,14 @@ module.exports = {
 				let content = newRequest.packet || newRequest.body
 				let parameters = Array.isArray( content ) ? content : (content.params || [])
 
+				let terms = _.pick( request, options.attributesToPass || [] )
+
 				let ps = newRequest.params
 				try {
 					if ( options.gatekeeper )
 						await options.gatekeeper( request, ps.flowID, ps.processID, ps.entity, ps.message, parameters )
 
-					let res = await Darcon.comm( ps.mode || MODE_REQUEST, ps.flowID, ps.processID, ps.entity, ps.message, ...parameters )
+					let res = await Darcon.comm( ps.mode || MODE_REQUEST, ps.flowID, ps.processID, ps.entity, ps.message, parameters, terms )
 
 					if ( options.conformer )
 						await options.conformer( request, ps.flowID, ps.processID, ps.entity, ps.message, res )
@@ -56,11 +58,14 @@ module.exports = {
 					throw new Error('Invalid request')
 
 				let parameters = Array.isArray( content ) ? content : (content.params || [])
+
+				let terms = _.pick( request, options.attributesToPass || [] )
+
 				try {
 					if ( options.gatekeeper )
 						await options.gatekeeper( request, content.flowID, content.processID, content.entity, content.message, parameters )
 
-					let res = await Darcon.comm( content.mode || MODE_REQUEST, content.flowID, content.processID, content.entity, content.message, ...parameters )
+					let res = await Darcon.comm( content.mode || MODE_REQUEST, content.flowID, content.processID, content.entity, content.message, parameters, terms )
 
 					if ( options.conformer )
 						await options.conformer( request, content.flowID, content.processID, content.entity, content.message, res )
@@ -79,7 +84,7 @@ module.exports = {
 
 		async function processSocketData (socket, data) {
 			if (fastifyConfig.wsPreprocess) await fastifyConfig.wsPreprocess( socket, data )
-			let res = await Darcon.comm( data.mode || MODE_REQUEST, data.flowID, data.processID, data.entity, data.message, ...data.params )
+			let res = await Darcon.comm( data.mode || MODE_REQUEST, data.flowID, data.processID, data.entity, data.message, data.params, data.terms )
 			socket.send( JSON.stringify( { id: data.id, result: res } ) )
 		}
 
