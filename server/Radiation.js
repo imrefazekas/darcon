@@ -10,6 +10,8 @@ function extractRequest ( request, options = {} ) {
 	newRequest.hostname = request.raw.hostname
 	newRequest.url = request.raw.url
 
+	if ( options.extractRequest )
+		options.extractRequest( request )
 	for (let attribute of options.attributesRespected ) {
 		newRequest[ attribute ] = request[ attribute ]
 	}
