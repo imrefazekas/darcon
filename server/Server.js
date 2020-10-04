@@ -25,7 +25,6 @@ module.exports = {
 
 		this.setupTerminationHandlers()
 
-
 		if (fastifyConfig.defaultPlugins)
 			await fastifyConfig.defaultPlugins( this.fastify )
 
