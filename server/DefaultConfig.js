@@ -22,8 +22,9 @@ module.exports = {
 	rest: {
 		standard: true,
 		darcon: '/DarconRPC',
-		attributesRespected,
-		gatekeeper: {}
+		attributesRespected
+		// async gatekeeper ( request, flowID, processID, entity, message, params ) {},
+		// async conformer ( request, flowID, processID, entity, message, res ) {}
 	},
 	ws: {
 		darcon: '/DarconWS'

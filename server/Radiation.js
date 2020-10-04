@@ -25,12 +25,18 @@ module.exports = {
 			fastify.post( prefix + '/:division/:entity/:message', fastifyConfig.preValidation ? fastifyConfig.preValidation( fastify, '/:division/:entity/:message' ) : {}, async function (request, reply) {
 				let newRequest = extractRequest( request, options )
 				let content = newRequest.packet || newRequest.body
+				let parameters = Array.isArray( content ) ? content : (content.params || [])
 
 				let ps = newRequest.params
 				try {
-					let res = await Darcon.comm( ps.mode || MODE_REQUEST, ps.flowID, ps.processID, ps.entity, ps.message, ...(Array.isArray( content ) ? content : content.params || []) )
-					if ( options.gatekeeper && options.gatekeeper[ ps.message ] )
-						await options.gatekeeper[ ps.message ]( res )
+					if ( options.gatekeeper )
+						await options.gatekeeper( request, ps.flowID, ps.processID, ps.entity, ps.message, parameters )
+
+					let res = await Darcon.comm( ps.mode || MODE_REQUEST, ps.flowID, ps.processID, ps.entity, ps.message, ...parameters )
+
+					if ( options.conformer )
+						await options.conformer( request, ps.flowID, ps.processID, ps.entity, ps.message, res )
+
 					return res
 				} catch (err) {
 					throw err
@@ -49,10 +55,15 @@ module.exports = {
 				if (!content || !content.entity || !content.message)
 					throw new Error('Invalid request')
 
+				let parameters = Array.isArray( content ) ? content : (content.params || [])
 				try {
-					let res = await Darcon.comm( content.mode || MODE_REQUEST, content.flowID, content.processID, content.entity, content.message, ...Array.isArray( content ) ? content : content.params )
-					if ( options.gatekeeper && options.gatekeeper[ content.message ] )
-						await options.gatekeeper[ content.message ]( res )
+					if ( options.gatekeeper )
+						await options.gatekeeper( request, content.flowID, content.processID, content.entity, content.message, parameters )
+
+					let res = await Darcon.comm( content.mode || MODE_REQUEST, content.flowID, content.processID, content.entity, content.message, ...parameters )
+
+					if ( options.conformer )
+						await options.conformer( request, content.flowID, content.processID, content.entity, content.message, res )
 
 					return res
 				} catch (err) {
