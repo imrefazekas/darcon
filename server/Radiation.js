@@ -28,7 +28,7 @@ module.exports = {
 
 				let ps = newRequest.params
 				try {
-					let res = await Darcon.comm( ps.mode || MODE_REQUEST, ps.flowID, ps.processID, ps.entity, ps.message, ...Array.isArray( content ) ? content : content.params )
+					let res = await Darcon.comm( ps.mode || MODE_REQUEST, ps.flowID, ps.processID, ps.entity, ps.message, ...(Array.isArray( content ) ? content : content.params || []) )
 					if ( options.gatekeeper && options.gatekeeper[ ps.message ] )
 						await options.gatekeeper[ ps.message ]( res )
 					return res
