@@ -461,9 +461,9 @@ Object.assign( Darcon.prototype, {
 				message,
 				delegateEntity, delegateMessage,
 
-				params,
+				params: params || [],
 
-				terms
+				terms: terms || {}
 			}
 		}
 
