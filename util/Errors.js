@@ -5,10 +5,11 @@ let assigner = new Assigner()
 
 let _ = require('isa.js')
 
-let DarconError = function (message, errorName, errorCode) {
+let DarconError = function (message, errorName, errorCode, event) {
 	this.message = message
 	this.errorName = errorName
 	this.errorCode = errorCode
+	this.event = event || ''
 	Error.captureStackTrace(this, DarconError)
 }
 inherits(DarconError, Error)
@@ -35,7 +36,7 @@ let ErrorCreator = function (options = {}) {
 	let fnc = function (opts = {}) {
 		let newArgs = assigner.assign({}, args, opts)
 		let message = templating(options.message, newArgs)
-		let resultError = new DarconError(message, options.errorName || errorCode, errorCode)
+		let resultError = new DarconError(message, options.errorName || errorCode, errorCode, options.event)
 		resultError.params = newArgs
 		return resultError
 	}
