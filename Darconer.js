@@ -162,14 +162,14 @@ Object.assign( Darcon.prototype, {
 				let paramsToPass = assigner.cloneObject( incoming.comm.params ).concat( [ assigner.assign( {}, terms, {
 					flowID: incoming.comm.flowID,
 					processID: incoming.comm.processID,
-					async request (to, message, params, _terms) {
-						return self.innercomm(MODE_REQUEST, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, params, assigner.assign( {}, terms, _terms))
+					async request (to, message, params) {
+						return self.innercomm(MODE_REQUEST, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, params, terms )
 					},
-					async inform (to, message, params, _terms) {
-						return self.innercomm(MODE_INFORM, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, params, assigner.assign( {}, terms, _terms))
+					async inform (to, message, params) {
+						return self.innercomm(MODE_INFORM, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, params, terms )
 					},
-					async delegate (to, message, delegateEntity, delegateMessage, params, _terms) {
-						return self.innercomm(MODE_DELEGATE, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, delegateEntity, delegateMessage, params, assigner.assign( {}, terms, _terms))
+					async delegate (to, message, delegateEntity, delegateMessage, params) {
+						return self.innercomm(MODE_DELEGATE, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, delegateEntity, delegateMessage, params, terms )
 					},
 					comm: incoming.comm
 				} ) ] )
