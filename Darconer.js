@@ -162,14 +162,14 @@ Object.assign( Darcon.prototype, {
 				let paramsToPass = assigner.cloneObject( incoming.comm.params ).concat( [ assigner.assign( {}, terms, {
 					flowID: incoming.comm.flowID,
 					processID: incoming.comm.processID,
-					async request (to, message, ...params) {
-						return self.innercomm(MODE_REQUEST, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, params, terms)
+					async request (to, message, params, _terms) {
+						return self.innercomm(MODE_REQUEST, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, params, assigner.assign( {}, terms, _terms))
 					},
-					async inform (to, message, ...params) {
-						return self.innercomm(MODE_INFORM, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, params, terms)
+					async inform (to, message, params, _terms) {
+						return self.innercomm(MODE_INFORM, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, params, assigner.assign( {}, terms, _terms))
 					},
-					async delegate (to, message, delegateEntity, delegateMessage, ...params) {
-						return self.innercomm(MODE_DELEGATE, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, delegateEntity, delegateMessage, params, terms)
+					async delegate (to, message, delegateEntity, delegateMessage, params, _terms) {
+						return self.innercomm(MODE_DELEGATE, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, delegateEntity, delegateMessage, params, assigner.assign( {}, terms, _terms))
 					},
 					comm: incoming.comm
 				} ) ] )
@@ -213,20 +213,14 @@ Object.assign( Darcon.prototype, {
 
 		entity.Darcon = this
 
-		entity.request = async function (to, message, ...params) {
-			let terms = params[ params.length - 1 ]
-			let rP = params.slice( 0, -1 )
-			return self.innercomm(MODE_REQUEST, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, null, null, rP, terms)
+		entity.request = async function (to, message, params, terms) {
+			return self.innercomm(MODE_REQUEST, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, null, null, params, terms)
 		}
-		entity.inform = async function (to, message, ...params) {
-			let terms = params[ params.length - 1 ]
-			let rP = params.slice( 0, -1 )
-			return self.innercomm(MODE_INFORM, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, null, null, rP, terms)
+		entity.inform = async function (to, message, params, terms) {
+			return self.innercomm(MODE_INFORM, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, null, null, params, terms)
 		}
-		entity.delegate = async function (to, message, delegateEntity, delegateMessage, ...params) {
-			let terms = params[ params.length - 1 ]
-			let rP = params.slice( 0, -1 )
-			return self.innercomm(MODE_DELEGATE, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, delegateEntity, delegateMessage, rP, terms)
+		entity.delegate = async function (to, message, delegateEntity, delegateMessage, params, terms) {
+			return self.innercomm(MODE_DELEGATE, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, delegateEntity, delegateMessage, params, terms)
 		}
 
 		let cfg = assigner.assign( { logger: self.logger }, config, this.entities[ entity.name ] || {}, config.millieu || {} )

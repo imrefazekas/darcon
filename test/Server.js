@@ -50,7 +50,7 @@ async function darconer () {
 			async echo (...params) {
 				console.log('!!!!!!!!!!!!!!!!!!!!', params)
 				let terms = params[ params.length - 1 ]
-				return params.slice(0, -1).concat( await terms.request( 'Claire', 'extend', 'Wow' ) ).concat( await this.request( 'Claire', 'extend', 'Awesome', terms ) )
+				return params.slice(0, -1).concat( await terms.request( 'Claire', 'extend', ['Wow'] ) ).concat( await this.request( 'Claire', 'extend', ['Awesome'], terms ) )
 			}
 		}
 	)

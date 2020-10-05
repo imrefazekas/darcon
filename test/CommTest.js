@@ -31,9 +31,12 @@ async function start () {
 		{
 			name: 'Marie',
 			version: '2.0.0',
+			async weather (...params) {
+				return 'Nice'
+			},
 			async echo (...params) {
 				let terms = params[ params.length - 1 ]
-				return params.slice(0, -1).concat( await terms.request( 'Claire', 'extend', 'Wow' ) ).concat( await this.request( 'Claire', 'extend', 'Awesome', terms ) )
+				return params.slice(0, -1).concat( await terms.request( 'Claire', 'extend', ['Wow'] ) ).concat( await this.request( 'Claire', 'extend', ['Awesome'], terms ) )
 			}
 		}
 	)
@@ -62,6 +65,8 @@ async function comm () {
 	console.log('Promises made')
 	console.log( await Promise.all( ps ) )
 	console.log('>>>>>>>>', (Date.now() - time) )
+
+	console.log( '>>>>>', await Darcon.comm( MODE_REQUEST, '', '', 'Marie', 'weather' ) )
 	return 'OK'
 }
 
