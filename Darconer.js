@@ -358,7 +358,7 @@ Object.assign( Darcon.prototype, {
 				let message = self.messages[key].message
 				delete self.messages[ key ]
 				delete self.chunks[ key ]
-				callbackFn( BaseErrors.RequestTimeout( { entity, message, tolerance: self.reponseTolerance } ) )
+				callbackFn( BaseErrors.RequestTimeout( { entity, message, tolerance: self.reponseTolerance } ) )
 			}
 		}
 	},
@@ -488,6 +488,16 @@ Object.assign( Darcon.prototype, {
 
 	async comm (mode, flowID, processID, entity, message, params, terms) {
 		return this.innercomm(mode, flowID, processID, GATER, this.nodeID, entity, message, null, null, params, terms)
+	},
+
+	async inform (flowID, entity, message, params, terms) {
+		return this.innercomm(MODE_INFORM, flowID, '', GATER, this.nodeID, entity, message, null, null, params, terms)
+	},
+	async delegate (flowID, entity, message, params, terms) {
+		return this.innercomm(MODE_DELEGATE, flowID, '', GATER, this.nodeID, entity, message, null, null, params, terms)
+	},
+	async request (flowID, entity, message, params, terms) {
+		return this.innercomm(MODE_REQUEST, flowID, '', GATER, this.nodeID, entity, message, null, null, params, terms)
 	}
 
 } )
