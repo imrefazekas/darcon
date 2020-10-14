@@ -1,5 +1,3 @@
-let Clerobee = require('clerobee')
-let clerobee = new Clerobee( 32 )
 const _ = require( 'isa.js' )
 
 let { MODE_REQUEST } = require( '../models/Packet' )
@@ -18,7 +16,8 @@ function extractRequest ( request, options = {} ) {
 	return newRequest
 }
 
-module.exports = {
+function Radiator () {}
+Object.assign( Radiator.prototype, {
 	rester ( Darcon, fastify, options = {}, fastifyConfig = {} ) {
 		let prefix = fastifyConfig.apiPrefix || ''
 		if ( options.standard ) {
@@ -107,4 +106,6 @@ module.exports = {
 			options: { maxPayload: 1048576, noServer: true }
 		})
 	}
-}
+} )
+
+module.exports = Radiator

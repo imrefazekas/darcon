@@ -1,7 +1,9 @@
 let config = require('../config')
 let Darconer = require( '../Darconer' )
 let Darcon = new Darconer()
-let Server = require( '../server/Server' )
+let ServerProto = require( '../server/Server' )
+let Server = new ServerProto()
+
 let { MODE_REQUEST, MODE_INFORM, MODE_DELEGATE } = require( '../models/Packet' )
 
 const Clerobee = require( 'clerobee' )

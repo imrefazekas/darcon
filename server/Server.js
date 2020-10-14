@@ -5,9 +5,12 @@ let assigner = new Assigner()
 
 let Radiation = require( './Radiation' )
 
-module.exports = {
+function Server () {}
+Object.assign( Server.prototype, {
 	async init (config = {}) {
 		let self = this
+
+		self.Radiation = new Radiation()
 
 		if (!config.Darconer) throw new Error( 'Darconer is missing!' )
 
@@ -33,9 +36,9 @@ module.exports = {
 
 
 		if (self.config.rest)
-			await Radiation.rester( config.Darconer, this.fastify, assigner.assign( {}, self.config.rest, { logger: self.logger } ), fastifyConfig )
+			await self.Radiation.rester( config.Darconer, this.fastify, assigner.assign( {}, self.config.rest, { logger: self.logger } ), fastifyConfig )
 		if (self.config.ws)
-			await Radiation.ws( config.Darconer, this.fastify, assigner.assign( {}, self.config.ws, { logger: self.logger } ), fastifyConfig )
+			await self.Radiation.ws( config.Darconer, this.fastify, assigner.assign( {}, self.config.ws, { logger: self.logger } ), fastifyConfig )
 
 
 		if (fastifyConfig.routes)
@@ -85,4 +88,6 @@ module.exports = {
 			console.log('HTTP(S) stopped')
 		}
 	}
-}
+} )
+
+module.exports = Server
