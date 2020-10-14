@@ -178,6 +178,7 @@ Object.assign( Darcon.prototype, {
 				if (!defined(response)) throw BaseErrors.NoReturnValue( { fn: incoming.comm.message, entity: incoming.comm.entity } )
 				incoming.comm.response = response
 			} catch (err) {
+				self.logger.debug( err )
 				incoming.comm.error = { message: err.message || err.toString(), code: err.code || err.errorCode || err.errorcode || '-1', errorName: err.errorName || '' }
 			}
 
