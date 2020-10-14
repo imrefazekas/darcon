@@ -22,6 +22,9 @@ Object.assign( Radiator.prototype, {
 		let prefix = fastifyConfig.apiPrefix || ''
 		if ( options.standard ) {
 			fastify.post( prefix + '/:division/:entity/:message', fastifyConfig.preValidation ? fastifyConfig.preValidation( fastify, '/:division/:entity/:message' ) : {}, async function (request, reply) {
+				if ( request.params.division !== Darcon.name )
+					throw new Error('Invalid request')
+
 				let newRequest = extractRequest( request, options )
 				let content = newRequest.packet || newRequest.body
 				let parameters = Array.isArray( content ) ? content : (content.params || [])
