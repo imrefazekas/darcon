@@ -63,7 +63,7 @@ async function comm () {
 	let time = Date.now()
 	let ps = []
 
-	console.log( await Darcon.delegate( '', '', 'Claire', 'transport', 'Marie', 'echoBack', [ 'Wow' ], { data: 'huhhh' } ) )
+	console.log( await Darcon.delegate( '', '', 'Claire', 'transport', 'Marie', 'echoBack', 'errBack', [ 'Wow' ], { data: 'huhhh' } ) )
 
 	for (let i = 0; i < 1; ++i)
 		ps.push( Darcon.comm( MODE_REQUEST, '', '', 'Marie', 'echo', [

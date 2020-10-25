@@ -146,13 +146,13 @@ Object.assign( Darcon.prototype, {
 			flowID: incoming.comm.flowID,
 			processID: incoming.comm.processID,
 			async request (to, message, params) {
-				return self.innercomm(MODE_REQUEST, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, params, terms )
+				return self.innercomm(MODE_REQUEST, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, null, params, terms )
 			},
 			async inform (to, message, params) {
-				return self.innercomm(MODE_INFORM, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, params, terms )
+				return self.innercomm(MODE_INFORM, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, null, params, terms )
 			},
-			async delegate (to, message, delegateEntity, delegateMessage, params) {
-				return self.innercomm(MODE_DELEGATE, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, delegateEntity, delegateMessage, params, terms )
+			async delegate (to, message, delegateEntity, delegateMessage, delegateErrorMessage, params) {
+				return self.innercomm(MODE_DELEGATE, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, delegateEntity, delegateMessage, delegateErrorMessage, params, terms )
 			},
 			comm: incoming.comm
 		} )
@@ -163,8 +163,11 @@ Object.assign( Darcon.prototype, {
 
 			if ( incoming.comm.delegateEntity && incoming.comm.delegateMessage ) {
 				try {
-					if ( error ) throw error
-					await self.ins[ incoming.comm.delegateEntity ].entity[ incoming.comm.delegateMessage ]( incoming.comm.response, terms )
+					if ( error ) {
+						self.logger.debug( error )
+						await self.ins[ incoming.comm.delegateEntity ].entity[ incoming.comm.delegateErrorMessage ]( error, terms )
+					}
+					else await self.ins[ incoming.comm.delegateEntity ].entity[ incoming.comm.delegateMessage ]( incoming.comm.response, terms )
 				} catch (err) {
 					self.logger.debug( err )
 				}
@@ -233,13 +236,13 @@ Object.assign( Darcon.prototype, {
 		entity.Darcon = this
 
 		entity.request = async function (to, message, params, terms) {
-			return self.innercomm(MODE_REQUEST, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, null, null, params, terms)
+			return self.innercomm(MODE_REQUEST, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, null, null, null, params, terms)
 		}
 		entity.inform = async function (to, message, params, terms) {
-			return self.innercomm(MODE_INFORM, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, null, null, params, terms)
+			return self.innercomm(MODE_INFORM, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, null, null, null, params, terms)
 		}
-		entity.delegate = async function (to, message, delegateEntity, delegateMessage, params, terms) {
-			return self.innercomm(MODE_DELEGATE, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, delegateEntity, delegateMessage, params, terms)
+		entity.delegate = async function (to, message, delegateEntity, delegateMessage, delegateErrorMessage, params, terms) {
+			return self.innercomm(MODE_DELEGATE, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, delegateEntity, delegateMessage, delegateErrorMessage, params, terms)
 		}
 
 		let cfg = assigner.assign( { logger: self.logger }, config, this.entities[ entity.name ] || {}, config.millieu || {} )
@@ -445,10 +448,10 @@ Object.assign( Darcon.prototype, {
 		}
 	},
 
-	async innercomm (mode, flowID, processID, source, sourceNodeID, entity, message, delegateEntity, delegateMessage, params, terms = {}) {
+	async innercomm (mode, flowID, processID, source, sourceNodeID, entity, message, delegateEntity, delegateMessage, delegateErrorMessage, params, terms = {}) {
 		let self = this
 
-		if (mode === MODE_DELEGATE && (!delegateEntity || !delegateMessage) )
+		if (mode === MODE_DELEGATE && (!delegateEntity || !delegateMessage || !delegateErrorMessage) )
 			throw BaseErrors.DelegationRequired( { mode: MODE_DELEGATE } )
 
 		let nodeID = this._randomNodeID( entity )
@@ -472,7 +475,7 @@ Object.assign( Darcon.prototype, {
 
 				entity,
 				message,
-				delegateEntity, delegateMessage,
+				delegateEntity, delegateMessage, delegateErrorMessage,
 
 				params: params || [],
 
@@ -508,17 +511,17 @@ Object.assign( Darcon.prototype, {
 	},
 
 	async comm (mode, flowID, processID, entity, message, params, terms) {
-		return this.innercomm(mode, flowID, processID, GATER, this.nodeID, entity, message, null, null, params, terms)
+		return this.innercomm(mode, flowID, processID, GATER, this.nodeID, entity, message, null, null, null, params, terms)
 	},
 
 	async inform (flowID, processID, entity, message, params, terms) {
-		return this.innercomm(MODE_INFORM, flowID, processID, GATER, this.nodeID, entity, message, null, null, params, terms)
+		return this.innercomm(MODE_INFORM, flowID, processID, GATER, this.nodeID, entity, message, null, null, null, params, terms)
 	},
-	async delegate (flowID, processID, entity, message, delegateEntity, delegateMessage, params, terms) {
-		return this.innercomm(MODE_DELEGATE, flowID, processID, GATER, this.nodeID, entity, message, delegateEntity, delegateMessage, params, terms)
+	async delegate (flowID, processID, entity, message, delegateEntity, delegateMessage, delegateErrorMessage, params, terms) {
+		return this.innercomm(MODE_DELEGATE, flowID, processID, GATER, this.nodeID, entity, message, delegateEntity, delegateMessage, delegateErrorMessage, params, terms)
 	},
 	async request (flowID, processID, entity, message, params, terms) {
-		return this.innercomm(MODE_REQUEST, flowID, processID, GATER, this.nodeID, entity, message, null, null, params, terms)
+		return this.innercomm(MODE_REQUEST, flowID, processID, GATER, this.nodeID, entity, message, null, null, null, params, terms)
 	}
 
 } )
