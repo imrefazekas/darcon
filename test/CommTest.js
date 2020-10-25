@@ -37,6 +37,10 @@ async function start () {
 			async echo (...params) {
 				let terms = params[ params.length - 1 ]
 				return params.slice(0, -1).concat( await terms.request( 'Claire', 'extend', ['Wow'] ) ).concat( await this.request( 'Claire', 'extend', ['Awesome'], terms ) )
+			},
+			async echoBack (message) {
+				console.log('echoBack >>>>>>>>>>>>>>', message)
+				return 'OK'
 			}
 		}
 	)
@@ -46,6 +50,10 @@ async function start () {
 			version: '2.0.0',
 			async extend (...params) {
 				return params.slice(0, -1)
+			},
+			async transport (message) {
+				console.log('----- Transport:: ', message)
+				return 'Hello'
 			}
 		}
 	)
@@ -54,6 +62,9 @@ async function start () {
 async function comm () {
 	let time = Date.now()
 	let ps = []
+
+	console.log( await Darcon.delegate( '', '', 'Claire', 'transport', 'Marie', 'echoBack', [ 'Wow' ], { data: 'huhhh' } ) )
+
 	for (let i = 0; i < 1; ++i)
 		ps.push( Darcon.comm( MODE_REQUEST, '', '', 'Marie', 'echo', [
 			// clerobee.generateAbcString( 100000 )
@@ -67,6 +78,7 @@ async function comm () {
 	console.log('>>>>>>>>', (Date.now() - time) )
 
 	console.log( '>>>>>', await Darcon.comm( MODE_REQUEST, '', '', 'Marie', 'weather' ) )
+
 	return 'OK'
 }
 

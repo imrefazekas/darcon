@@ -135,18 +135,48 @@ Object.assign( Darcon.prototype, {
 	async processMessage (incoming) {
 		let self = this
 
+		let error = incoming.comm.error ? ErrorCreator( {
+			errorCode: incoming.comm.error.errorcode,
+			errorName: incoming.comm.error.errorName,
+			message: incoming.comm.error.message,
+			event: incoming.comm.entity + '.' + incoming.comm.message
+		} )() : null
+
+		let terms = assigner.assign( {}, incoming.comm.terms || {}, {
+			flowID: incoming.comm.flowID,
+			processID: incoming.comm.processID,
+			async request (to, message, params) {
+				return self.innercomm(MODE_REQUEST, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, params, terms )
+			},
+			async inform (to, message, params) {
+				return self.innercomm(MODE_INFORM, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, params, terms )
+			},
+			async delegate (to, message, delegateEntity, delegateMessage, params) {
+				return self.innercomm(MODE_DELEGATE, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, delegateEntity, delegateMessage, params, terms )
+			},
+			comm: incoming.comm
+		} )
+
+
 		if ( defined(incoming.comm.response) || incoming.comm.error ) {
 			incoming.comm.receptionDate = Date.now()
 
-			if ( !self.messages[ incoming.uid ] ) return OK
+			if ( incoming.comm.delegateEntity && incoming.comm.delegateMessage ) {
+				try {
+					if ( error ) throw error
+					await self.ins[ incoming.comm.delegateEntity ].entity[ incoming.comm.delegateMessage ]( incoming.comm.response, terms )
+				} catch (err) {
+					self.logger.debug( err )
+				}
+				return OK
+			}
+
+			if ( !self.messages[ incoming.uid ] ) {
+				if ( incoming.comm.error ) console.error( error )
+				return OK
+			}
 			self.messages[ incoming.uid ].callback(
-				incoming.comm.error ? ErrorCreator( {
-					errorCode: incoming.comm.error.errorcode,
-					errorName: incoming.comm.error.errorName,
-					message: incoming.comm.error.message,
-					event: incoming.comm.entity + '.' + incoming.comm.message
-				} )() : null,
-				incoming.comm.error ? null : incoming.comm.response
+				error, incoming.comm.error ? null : incoming.comm.response
 			)
 		}
 		else {
@@ -159,21 +189,7 @@ Object.assign( Darcon.prototype, {
 
 				await self._validateMessage( incoming.comm )
 
-				let terms = incoming.comm.terms || {}
-				let paramsToPass = assigner.cloneObject( incoming.comm.params ).concat( [ assigner.assign( {}, terms, {
-					flowID: incoming.comm.flowID,
-					processID: incoming.comm.processID,
-					async request (to, message, params) {
-						return self.innercomm(MODE_REQUEST, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, params, terms )
-					},
-					async inform (to, message, params) {
-						return self.innercomm(MODE_INFORM, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, null, null, params, terms )
-					},
-					async delegate (to, message, delegateEntity, delegateMessage, params) {
-						return self.innercomm(MODE_DELEGATE, incoming.comm.flowID, incoming.comm.processID, incoming.comm.entity, self.nodeID, to, message, delegateEntity, delegateMessage, params, terms )
-					},
-					comm: incoming.comm
-				} ) ] )
+				let paramsToPass = assigner.cloneObject( incoming.comm.params ).concat( [ terms ] )
 				let response = await self.ins[ incoming.comm.entity ].entity[ incoming.comm.message ]( ...paramsToPass )
 				if (!defined(response)) throw BaseErrors.NoReturnValue( { fn: incoming.comm.message, entity: incoming.comm.entity } )
 				incoming.comm.response = response
@@ -184,12 +200,13 @@ Object.assign( Darcon.prototype, {
 
 			if (incoming.comm.mode === MODE_INFORM) return OK
 
+			incoming.comm.responseDate = Date.now()
 			if (incoming.comm.mode === MODE_DELEGATE) {
+				let socketName = incoming.comm.delegateEntity + SEPARATOR + self._randomNodeID( incoming.comm.delegateEntity )
+				self.sendOut( socketName, incoming )
 			}
 			else {
 				let socketName = incoming.comm.source + SEPARATOR + incoming.comm.sourceNodeID
-				incoming.comm.responseDate = Date.now()
-
 				self.sendOut( socketName, incoming )
 			}
 
@@ -464,26 +481,29 @@ Object.assign( Darcon.prototype, {
 		}
 
 		return new Promise( (resolve, reject) => {
-			let callback = function ( err, res ) {
-				delete self.messages[ packet.uid ]
-				if (err) return reject(err)
-				resolve(res)
-			}
-			self.messages[ packet.uid ] = {
-				timestamp: Date.now(),
-				callback,
-				entity: packet.comm.entity,
-				message: packet.comm.message
+			if ( packet.comm.mode === MODE_REQUEST ) {
+				let callback = function ( err, res ) {
+					delete self.messages[ packet.uid ]
+					if (err) return reject(err)
+					resolve(res)
+				}
+				self.messages[ packet.uid ] = {
+					timestamp: Date.now(),
+					callback,
+					entity: packet.comm.entity,
+					message: packet.comm.message
+				}
 			}
 			packet.comm.dispatchDate = Date.now()
 
-			self.sendOut( socketName, packet ).catch( (err) => {
+			self.sendOut( socketName, packet ).then( () => {
+				if ( packet.comm.mode !== MODE_REQUEST ) resolve( OK )
+			} ).catch( (err) => {
 				self.logger.darconlog(err)
 				reject(err)
 			} )
 
 			return OK
-
 		} )
 	},
 
@@ -491,14 +511,14 @@ Object.assign( Darcon.prototype, {
 		return this.innercomm(mode, flowID, processID, GATER, this.nodeID, entity, message, null, null, params, terms)
 	},
 
-	async inform (flowID, entity, message, params, terms) {
-		return this.innercomm(MODE_INFORM, flowID, '', GATER, this.nodeID, entity, message, null, null, params, terms)
+	async inform (flowID, processID, entity, message, params, terms) {
+		return this.innercomm(MODE_INFORM, flowID, processID, GATER, this.nodeID, entity, message, null, null, params, terms)
 	},
-	async delegate (flowID, entity, message, params, terms) {
-		return this.innercomm(MODE_DELEGATE, flowID, '', GATER, this.nodeID, entity, message, null, null, params, terms)
+	async delegate (flowID, processID, entity, message, delegateEntity, delegateMessage, params, terms) {
+		return this.innercomm(MODE_DELEGATE, flowID, processID, GATER, this.nodeID, entity, message, delegateEntity, delegateMessage, params, terms)
 	},
-	async request (flowID, entity, message, params, terms) {
-		return this.innercomm(MODE_REQUEST, flowID, '', GATER, this.nodeID, entity, message, null, null, params, terms)
+	async request (flowID, processID, entity, message, params, terms) {
+		return this.innercomm(MODE_REQUEST, flowID, processID, GATER, this.nodeID, entity, message, null, null, params, terms)
 	}
 
 } )

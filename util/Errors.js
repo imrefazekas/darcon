@@ -45,7 +45,6 @@ let ErrorCreator = function (options = {}) {
 
 let BaseErrors = {
 
-
 	NoReturnValue: ErrorCreator( {
 		errorCode: 66000,
 		errorName: 'NoReturnValue',
