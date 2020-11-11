@@ -21,7 +21,7 @@ Object.assign( Radiator.prototype, {
 	rester ( Darcon, fastify, options = {}, fastifyConfig = {} ) {
 		let prefix = fastifyConfig.apiPrefix || ''
 		if ( options.standard ) {
-			fastify.post( prefix + '/:division/:entity/:message', fastifyConfig.preValidation ? fastifyConfig.preValidation( fastify, '/:division/:entity/:message' ) : {}, async function (request, reply) {
+			fastify.post( prefix + '/:division/:entity/:message', fastifyConfig.preValidation ? fastifyConfig.preValidation( fastify ) : {}, async function (request, reply) {
 				if ( request.params.division !== Darcon.name )
 					throw new Error('Invalid request')
 
@@ -49,7 +49,7 @@ Object.assign( Radiator.prototype, {
 		}
 
 		if ( options.darcon ) {
-			fastify.post( prefix + options.darcon, fastifyConfig.preValidation ? fastifyConfig.preValidation( fastify, '/:division/:entity/:message' ) : {}, async function (request, reply) {
+			fastify.post( prefix + options.darcon, fastifyConfig.preValidation ? fastifyConfig.preValidation( fastify ) : {}, async function (request, reply) {
 				let newRequest = extractRequest( request, options )
 				let content = newRequest.packet || newRequest.body
 

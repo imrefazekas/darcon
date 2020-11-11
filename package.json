@@ -1,6 +1,6 @@
 {
 	"name": "darcon",
-	"version": "1.5.1",
+	"version": "1.5.2",
 	"description": "Simple Messaging/Service Bus for node entities over NatsIO",
 	"keywords": [
 		"messaging",
@@ -23,18 +23,18 @@
 	"main": "./Darconer.js",
 	"dependencies": {
 		"assign.js": "^2.8.11",
-		"clerobee": "^1.0.1",
+		"clerobee": "^1.0.2",
 		"fastify": "~3",
 		"fastify-websocket": "~2",
 		"isa.js": "^2.2.15",
 		"mkdirp": "^1.0.4",
 		"nats": "^1.4.12",
-		"proback.js": "^2.1.15",
+		"proback.js": "^2.1.16",
 		"quanstructor": "^0.5.3",
-		"vindication.js": "^4.20.10"
+		"vindication.js": "^4.20.12"
 	},
 	"devDependencies": {
-		"@nlv8/signun": "^1.4.0",
+		"@nlv8/signun": "^1.4.3",
 		"chai": "^4.2.0",
 		"pino": "~6",
 		"pino-pretty": "~4",

@@ -11,7 +11,7 @@ module.exports = {
 		defaultPlugins (fastify) { },
 		plugins (fastify) { },
 		routes (fastify) { },
-		preValidation (fastify, path) { return { } },
+		preValidation (fastify) { return { } },
 
 		async wsPreprocess ( socket, data ) { }
 	},
