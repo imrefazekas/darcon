@@ -235,14 +235,17 @@ Object.assign( Darcon.prototype, {
 
 		entity.Darcon = this
 
-		entity.request = async function (to, message, params, terms) {
-			return self.innercomm(MODE_REQUEST, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, null, null, null, params, terms)
+		entity.request = async function (to, message, params, terms = {}) {
+			return self.innercomm(MODE_REQUEST, (terms && terms.comm && terms.comm.flowID) || self.clerobee.generate( ), self.clerobee.generate( ), entity.name, self.nodeID, to, message, null, null, null, params, terms)
 		}
-		entity.inform = async function (to, message, params, terms) {
-			return self.innercomm(MODE_INFORM, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, null, null, null, params, terms)
+		entity.inform = async function (to, message, params, terms = {}) {
+			return self.innercomm(MODE_INFORM, (terms && terms.comm && terms.comm.flowID) || self.clerobee.generate( ), self.clerobee.generate( ), entity.name, self.nodeID, to, message, null, null, null, params, terms)
 		}
-		entity.delegate = async function (to, message, delegateEntity, delegateMessage, delegateErrorMessage, params, terms) {
-			return self.innercomm(MODE_DELEGATE, terms.comm.flowID, self.clerobee.generate( ), entity.name, self.nodeID, to, message, delegateEntity, delegateMessage, delegateErrorMessage, params, terms)
+		entity.delegate = async function (to, message, delegateEntity, delegateMessage, delegateErrorMessage, params, terms = {}) {
+			return self.innercomm(MODE_DELEGATE, (terms && terms.comm && terms.comm.flowID) || self.clerobee.generate( ), self.clerobee.generate( ), entity.name, self.nodeID, to, message, delegateEntity, delegateMessage, delegateErrorMessage, params, terms)
+		}
+		entity.whisper = async function (message, params, terms = {}) {
+			return self.whisper((terms && terms.comm && terms.comm.flowID) || self.clerobee.generate( ), self.clerobee.generate( ), entity.name, self.nodeID, entity.name, message, null, null, null, params, terms)
 		}
 
 		let cfg = assigner.assign( { logger: self.logger }, config, this.entities[ entity.name ] || {}, config.millieu || {} )
@@ -449,13 +452,24 @@ Object.assign( Darcon.prototype, {
 	},
 
 	async innercomm (mode, flowID, processID, source, sourceNodeID, entity, message, delegateEntity, delegateMessage, delegateErrorMessage, params, terms = {}) {
-		let self = this
-
 		if (mode === MODE_DELEGATE && (!delegateEntity || !delegateMessage || !delegateErrorMessage) )
 			throw BaseErrors.DelegationRequired( { mode: MODE_DELEGATE } )
 
 		let nodeID = this._randomNodeID( entity )
 		let socketName = entity + SEPARATOR + nodeID
+
+		return this._innercomm(socketName, mode, flowID, processID, source, sourceNodeID, entity, message, delegateEntity, delegateMessage, delegateErrorMessage, params, terms)
+	},
+	async whisper (flowID, processID, source, sourceNodeID, entity, message, delegateEntity, delegateMessage, delegateErrorMessage, params, terms = {}) {
+		for (let id in this.presences[ entity ]) {
+			let socketName = entity + SEPARATOR + id
+			await this._innercomm(socketName, MODE_INFORM, flowID, processID, source, sourceNodeID, entity, message, delegateEntity, delegateMessage, delegateErrorMessage, params, terms)
+		}
+		return OK
+	},
+
+	async _innercomm (socketName, mode, flowID, processID, source, sourceNodeID, entity, message, delegateEntity, delegateMessage, delegateErrorMessage, params, terms = {}) {
+		let self = this
 
 		let uid = self.clerobee.generate( )
 		let packet = {
