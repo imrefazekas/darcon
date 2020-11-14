@@ -461,7 +461,10 @@ Object.assign( Darcon.prototype, {
 		return this._innercomm(socketName, mode, flowID, processID, source, sourceNodeID, entity, message, delegateEntity, delegateMessage, delegateErrorMessage, params, terms)
 	},
 	async whisper (flowID, processID, source, sourceNodeID, entity, message, delegateEntity, delegateMessage, delegateErrorMessage, params, terms = {}) {
-		for (let id in this.presences[ entity ]) {
+		let ids = this.presences[ entity ] ? Object.keys( this.presences[ entity ] ) : []
+		if (!ids.includes(this.nodeID) ) ids.push( this.nodeID )
+
+		for (let id of ids) {
 			let socketName = entity + SEPARATOR + id
 			await this._innercomm(socketName, MODE_INFORM, flowID, processID, source, sourceNodeID, entity, message, delegateEntity, delegateMessage, delegateErrorMessage, params, terms)
 		}
