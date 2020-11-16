@@ -46,15 +46,15 @@ Object.assign( Darcon.prototype, {
 	name: UNDEFINED,
 	nodeID: UNDEFINED,
 
-	_randomNodeID ( entity ) {
+	_randomNodeID ( entity, message ) {
 		if ( this.ins && this.ins[ entity ] ) return this.nodeID
 
 		if ( !this.presences || !this.presences[ entity ] ) {
-			throw BaseErrors.NoSuchEntity( { entity } )
+			throw BaseErrors.NoSuchEntity( { entity, message } )
 		}
 
 		let ids = Object.keys( this.presences[ entity ] )
-		if ( ids.length === 0 ) throw BaseErrors.NoSuchEntity( { entity } )
+		if ( ids.length === 0 ) throw BaseErrors.NoSuchEntity( { entity, message } )
 
 		let id = ids[ Math.floor( Math.random( ) * ids.length ) ]
 		return id
@@ -187,7 +187,7 @@ Object.assign( Darcon.prototype, {
 
 			incoming.comm.responderNodeID = self.nodeID
 			try {
-				if (!self.ins[ incoming.comm.entity ]) throw BaseErrors.NoSuchEntity( { entity: incoming.comm.entity } )
+				if (!self.ins[ incoming.comm.entity ]) throw BaseErrors.NoSuchEntity( { entity: incoming.comm.entity, message: incoming.comm.message } )
 				if (!self.ins[ incoming.comm.entity ].entity[ incoming.comm.message ]) throw BaseErrors.NoSuchService( { service: incoming.comm.message, entity: incoming.comm.entity } )
 
 				await self._validateMessage( incoming.comm )
@@ -205,7 +205,7 @@ Object.assign( Darcon.prototype, {
 
 			incoming.comm.responseDate = Date.now()
 			if (incoming.comm.mode === MODE_DELEGATE) {
-				let socketName = incoming.comm.delegateEntity + SEPARATOR + self._randomNodeID( incoming.comm.delegateEntity )
+				let socketName = incoming.comm.delegateEntity + SEPARATOR + self._randomNodeID( incoming.comm.delegateEntity, incoming.comm.message )
 				self.sendOut( socketName, incoming )
 			}
 			else {
@@ -455,7 +455,7 @@ Object.assign( Darcon.prototype, {
 		if (mode === MODE_DELEGATE && (!delegateEntity || !delegateMessage || !delegateErrorMessage) )
 			throw BaseErrors.DelegationRequired( { mode: MODE_DELEGATE } )
 
-		let nodeID = this._randomNodeID( entity )
+		let nodeID = this._randomNodeID( entity, message )
 		let socketName = entity + SEPARATOR + nodeID
 
 		return this._innercomm(socketName, mode, flowID, processID, source, sourceNodeID, entity, message, delegateEntity, delegateMessage, delegateErrorMessage, params, terms)

@@ -66,7 +66,7 @@ let BaseErrors = {
 	NoSuchEntity: ErrorCreator( {
 		errorCode: 66003,
 		errorName: 'NoSuchEntity',
-		message: 'No {entity} is present'
+		message: 'No {entity} is present when {message}'
 	} ),
 
 	NoSuchService: ErrorCreator( {
