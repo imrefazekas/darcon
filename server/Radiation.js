@@ -28,10 +28,11 @@ Object.assign( Radiator.prototype, {
 				let parameters = Array.isArray( content ) ? content : (content.params || [])
 
 				let terms = _.pick( request, options.attributesToPass || [] )
+
+				let ps = newRequest.params
 				terms.flowID = ps.flowID
 				terms.processID = ps.processID
 
-				let ps = newRequest.params
 				try {
 					if ( options.gatekeeper )
 						await options.gatekeeper( request, ps.flowID, ps.processID, ps.entity, ps.message, parameters )
