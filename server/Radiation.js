@@ -4,7 +4,7 @@ let { MODE_REQUEST } = require( '../models/Packet' )
 
 function extractRequest ( request, options = {} ) {
 	let newRequest = _.pick(request, ['headers', 'body', 'query', 'params', 'packet'])
-	newRequest.remoteAddress = request.connection.remoteAddress || request.socket.remoteAddress || request.headers['x-forwarded-for'] || ''
+	newRequest.remoteAddress = request.remoteAddress || request.connection.remoteAddress || request.socket.remoteAddress || request.headers['x-forwarded-for'] || ''
 
 	if ( options.extractRequest )
 		options.extractRequest( request )
