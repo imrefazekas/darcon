@@ -79,6 +79,12 @@ let BaseErrors = {
 		errorCode: 66005,
 		errorName: 'RequestTimeout',
 		message: 'Response {tolerance}ms timeout to {entity}:{message}'
+	} ),
+
+	InvalidType: ErrorCreator( {
+		errorCode: 66006,
+		errorName: 'InvalidType',
+		message: 'The type of {attribute} is invalid'
 	} )
 
 }

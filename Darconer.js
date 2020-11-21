@@ -186,6 +186,7 @@ Object.assign( Darcon.prototype, {
 			incoming.comm.arrivalDate = Date.now()
 
 			incoming.comm.responderNodeID = self.nodeID
+
 			try {
 				if (!self.ins[ incoming.comm.entity ]) throw BaseErrors.NoSuchEntity( { entity: incoming.comm.entity, message: incoming.comm.message } )
 				if (!self.ins[ incoming.comm.entity ].entity[ incoming.comm.message ]) throw BaseErrors.NoSuchService( { service: incoming.comm.message, entity: incoming.comm.entity } )
@@ -452,8 +453,10 @@ Object.assign( Darcon.prototype, {
 	},
 
 	async innercomm (mode, flowID, processID, source, sourceNodeID, entity, message, delegateEntity, delegateMessage, delegateErrorMessage, params, terms = {}) {
-		if (mode === MODE_DELEGATE && (!delegateEntity || !delegateMessage || !delegateErrorMessage) )
-			throw BaseErrors.DelegationRequired( { mode: MODE_DELEGATE } )
+		if (mode === MODE_DELEGATE) {
+			if ( !_.isString(delegateEntity) || !_.isString(delegateMessage) || !_.isString(delegateErrorMessage) )
+				throw BaseErrors.DelegationRequired( { mode: MODE_DELEGATE } )
+		}
 
 		let nodeID = this._randomNodeID( entity, message )
 		let socketName = entity + SEPARATOR + nodeID
@@ -475,6 +478,9 @@ Object.assign( Darcon.prototype, {
 		let self = this
 
 		let uid = self.clerobee.generate( )
+
+		if (!params) params = []
+		if (!Array.isArray(params)) throw BaseErrors.InvalidType( { attribute: 'params' } )
 		let packet = {
 			uid,
 			comm: {
