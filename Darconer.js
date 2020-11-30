@@ -43,13 +43,18 @@ function chunkString (str, size) {
 function Darcon () {}
 
 Object.assign( Darcon.prototype, {
+	HIDDEN_SERVICES_PREFIX,
+	SEPARATOR,
 	name: UNDEFINED,
 	nodeID: UNDEFINED,
 
 	_randomNodeID ( entity, message ) {
 		if ( this.ins && this.ins[ entity ] ) return this.nodeID
 
-		if ( !this.presences || !this.presences[ entity ] ) {
+		if ( !this.presences ) {
+			throw BaseErrors.EntityNotInitiated( { entity: this.name } )
+		}
+		if ( !this.presences[ entity ] ) {
 			throw BaseErrors.NoSuchEntity( { entity, message } )
 		}
 

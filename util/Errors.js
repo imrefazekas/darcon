@@ -63,26 +63,32 @@ let BaseErrors = {
 		message: 'Delegation attributes must be set when mode is {mode}'
 	} ),
 
-	NoSuchEntity: ErrorCreator( {
+	EntityNotInitiated: ErrorCreator( {
 		errorCode: 66003,
+		errorName: 'EntityNotInitiated',
+		message: 'Entity {entity} has not been initiated yet'
+	} ),
+
+	NoSuchEntity: ErrorCreator( {
+		errorCode: 66004,
 		errorName: 'NoSuchEntity',
 		message: 'No {entity} is present when {message}'
 	} ),
 
 	NoSuchService: ErrorCreator( {
-		errorCode: 66004,
+		errorCode: 66005,
 		errorName: 'NoSuchService',
 		message: 'No {service} is present at {entity}'
 	} ),
 
 	RequestTimeout: ErrorCreator( {
-		errorCode: 66005,
+		errorCode: 66006,
 		errorName: 'RequestTimeout',
 		message: 'Response {tolerance}ms timeout to {entity}:{message}'
 	} ),
 
 	InvalidType: ErrorCreator( {
-		errorCode: 66006,
+		errorCode: 66007,
 		errorName: 'InvalidType',
 		message: 'The type of {attribute} is invalid'
 	} )
