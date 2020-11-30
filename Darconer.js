@@ -106,6 +106,8 @@ Object.assign( Darcon.prototype, {
 
 				if ( self.entityAppeared )
 					self.entityAppeared( self, present.entity, present.nodeID ).catch( (err) => { self.logger.darconlog(err) } )
+
+				self.logger.darconlog( null, `Entity ${present.entity} at ${this.name} appeared...`, {}, 'debug' )
 			} catch (err) { self.logger.darconlog( err ) }
 		} )
 
@@ -427,8 +429,10 @@ Object.assign( Darcon.prototype, {
 		let timestamp = Date.now()
 		Object.keys(self.presences).forEach( function (entity) {
 			Object.keys(self.presences[entity]).forEach( function (node) {
-				if ( self.presences[entity][node].timestamp <= timestamp - self.keeperInterval )
+				if ( self.presences[entity][node].timestamp <= timestamp - self.keeperInterval ) {
 					delete self.presences[entity][node]
+					self.logger.darconlog( null, `Presence of ${entity} is missing`, {}, 'debug' )
+				}
 			} )
 
 			if ( Object.keys( self.presences[entity] ).length === 0 )

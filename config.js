@@ -4,7 +4,7 @@ module.exports = {
 	reponseTolerance: 5000,
 
 	reporterInterval: 5000,
-	keeperInterval: 15000,
+	keeperInterval: 20000,
 
 	maxReconnectAttempts: -1,
 	reconnectTimeWait: 250,
