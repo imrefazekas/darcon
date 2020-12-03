@@ -1,6 +1,6 @@
 {
 	"name": "darcon",
-	"version": "1.5.15",
+	"version": "1.5.16",
 	"description": "Simple Messaging/Service Bus for node entities over NatsIO",
 	"keywords": [
 		"messaging",
@@ -22,7 +22,7 @@
 	"license": "MIT",
 	"main": "./Darconer.js",
 	"dependencies": {
-		"assign.js": "^2.8.11",
+		"assign.js": "^2.8.13",
 		"clerobee": "^1.0.2",
 		"fastify": "~3",
 		"fastify-websocket": "~2",
