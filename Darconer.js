@@ -489,7 +489,7 @@ Object.assign( Darcon.prototype, {
 		let uid = self.clerobee.generate( )
 
 		if (!params) params = []
-		if (!Array.isArray(params)) throw BaseErrors.InvalidType( { attribute: 'params' } )
+		if (!Array.isArray(params)) throw BaseErrors.InvalidType( { attribute: 'params', entity, message } )
 		let packet = {
 			uid,
 			comm: {

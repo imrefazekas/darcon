@@ -90,7 +90,7 @@ let BaseErrors = {
 	InvalidType: ErrorCreator( {
 		errorCode: 66007,
 		errorName: 'InvalidType',
-		message: 'The type of {attribute} is invalid'
+		message: 'The type of {attribute} is invalid for {entity}.{message}'
 	} )
 
 }
