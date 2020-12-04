@@ -97,17 +97,23 @@ Object.assign( Darcon.prototype, {
 
 				if ( self.presences[ present.entity ][ present.nodeID ] ) {
 					self.presences[ present.entity ][ present.nodeID ].timestamp = Date.now()
-					return OK
+				}
+				else {
+					self.presences[ present.entity ][ present.nodeID ] = {
+						timestamp: Date.now(), projectVersion: present.projectVersion, entityVersion: present.entityVersion
+					}
+
+					if ( self.entityAppeared )
+						self.entityAppeared( self, present.entity, present.nodeID ).catch( (err) => { self.logger.darconlog(err) } )
+
+					self.logger.darconlog( null, `Entity ${present.entity} at ${this.name} appeared...`, {}, 'debug' )
 				}
 
-				self.presences[ present.entity ][ present.nodeID ] = {
-					timestamp: Date.now(), projectVersion: present.projectVersion, entityVersion: present.entityVersion
+				if (present.servicesUpdated ) {
+					if (self.entityUpdated)
+						self.entityUpdated( self, present.entity, present.nodeID ).catch( (err) => { self.logger.darconlog(err) } )
+					self.logger.darconlog( null, `Entity ${present.entity} at ${this.name} updated...`, {}, 'debug' )
 				}
-
-				if ( self.entityAppeared )
-					self.entityAppeared( self, present.entity, present.nodeID ).catch( (err) => { self.logger.darconlog(err) } )
-
-				self.logger.darconlog( null, `Entity ${present.entity} at ${this.name} appeared...`, {}, 'debug' )
 			} catch (err) { self.logger.darconlog( err ) }
 		} )
 
@@ -407,9 +413,11 @@ Object.assign( Darcon.prototype, {
 					entity: entity.name,
 					nodeID: self.nodeID,
 					entityVersion: entity.version,
-					projectVersion: VERSION
+					projectVersion: VERSION,
+					servicesUpdated: !!entity._servicesUpdated
 				}
 				self.natsServer.publish( SERVICES_REPORTS, self.strict ? JSON.stringify( await CommPresencer.derive( report ) ) : JSON.stringify( report ) )
+				entity._servicesUpdated = false
 			}
 		} catch ( err ) { self.logger.darconlog( err ) }
 	},
