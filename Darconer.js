@@ -302,7 +302,7 @@ Object.assign( Darcon.prototype, {
 
 		return entity
 	},
-	async updateServices ( name ) {
+	async updateServicesOf ( name ) {
 		if (!this.ins[ name ]) throw BaseErrors.NoSuchEntity( { entity: name, message: '' } )
 
 		let entity = this.ins[ name ].entity
