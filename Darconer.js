@@ -245,7 +245,7 @@ Object.assign( Darcon.prototype, {
 	async publish (entity, config = {}) {
 		let self = this
 
-		let functions = _.functionNames( entity ).filter( (fnName) => { return !fnName.startsWith( HIDDEN_SERVICES_PREFIX ) } )
+		let functions = _.functionNames( entity, true ).filter( (fnName) => { return !fnName.startsWith( HIDDEN_SERVICES_PREFIX ) } )
 
 		entity.Darcon = this
 
@@ -301,6 +301,17 @@ Object.assign( Darcon.prototype, {
 			}
 
 		return entity
+	},
+	async updateServices ( name ) {
+		if (!this.ins[ name ]) throw BaseErrors.NoSuchEntity( { entity: name, message: '' } )
+
+		let entity = this.ins[ name ].entity
+		let functions = _.functionNames( entity, true ).filter( (fnName) => { return !fnName.startsWith( HIDDEN_SERVICES_PREFIX ) } )
+		this.ins[ name ].services = functions
+
+		this.ins[ name ].entity._servicesUpdated = true
+
+		return OK
 	},
 
 	async connect () {
