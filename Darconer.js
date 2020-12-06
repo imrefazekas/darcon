@@ -300,6 +300,7 @@ Object.assign( Darcon.prototype, {
 				entity
 			}
 
+		return entity
 	},
 
 	async connect () {
@@ -409,17 +410,21 @@ Object.assign( Darcon.prototype, {
 				if (name === SERVICES_REPORTS || name === GATER) continue
 
 				let entity = this.ins[ name ]
+
 				let report = {
 					entity: entity.name,
 					nodeID: self.nodeID,
 					entityVersion: entity.version,
 					projectVersion: VERSION,
-					servicesUpdated: !!entity._servicesUpdated
+					servicesUpdated: !!entity.entity._servicesUpdated
 				}
 				self.natsServer.publish( SERVICES_REPORTS, self.strict ? JSON.stringify( await CommPresencer.derive( report ) ) : JSON.stringify( report ) )
-				entity._servicesUpdated = false
+				entity.entity._servicesUpdated = false
 			}
-		} catch ( err ) { self.logger.darconlog( err ) }
+		} catch ( err ) {
+			self.logger.darconlog( err )
+			console.error(err)
+		}
 	},
 
 	async resetup ( ) {
