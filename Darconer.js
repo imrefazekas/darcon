@@ -303,7 +303,7 @@ Object.assign( Darcon.prototype, {
 		return entity
 	},
 	async updateServicesOf ( name ) {
-		if (!this.ins[ name ]) throw BaseErrors.NoSuchEntity( { entity: name, message: '' } )
+		if ( !this.ins[ name ] ) throw BaseErrors.NoSuchEntity( { entity: name, message: 'updateServices' } )
 
 		let entity = this.ins[ name ].entity
 		let functions = _.functionNames( entity, true ).filter( (fnName) => { return !fnName.startsWith( HIDDEN_SERVICES_PREFIX ) } )
