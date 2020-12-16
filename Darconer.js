@@ -109,7 +109,7 @@ Object.assign( Darcon.prototype, {
 					self.logger.darconlog( null, `Entity ${present.entity} at ${this.name} appeared...`, {}, 'debug' )
 				}
 
-				if (present.proclaim && self[present.proclaim] ) {
+				if (present.proclaim && present.proclaim !== 'proclaim' && self[present.proclaim] ) {
 					self[ present.proclaim ]( self, present.entity, present.nodeID ).catch( (err) => { self.logger.darconlog(err) } )
 					self.logger.darconlog( null, `Entity ${present.entity} at ${this.name} proclaimed: ${present.proclaim}`, {}, 'debug' )
 				}
