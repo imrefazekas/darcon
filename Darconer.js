@@ -109,10 +109,9 @@ Object.assign( Darcon.prototype, {
 					self.logger.darconlog( null, `Entity ${present.entity} at ${this.name} appeared...`, {}, 'debug' )
 				}
 
-				if (present.servicesUpdated ) {
-					if (self.entityUpdated)
-						self.entityUpdated( self, present.entity, present.nodeID ).catch( (err) => { self.logger.darconlog(err) } )
-					self.logger.darconlog( null, `Entity ${present.entity} at ${this.name} updated...`, {}, 'debug' )
+				if (present.proclaim && self[present.proclaim] ) {
+					self[ present.proclaim ]( self, present.entity, present.nodeID ).catch( (err) => { self.logger.darconlog(err) } )
+					self.logger.darconlog( null, `Entity ${present.entity} at ${this.name} proclaimed: ${present.proclaim}`, {}, 'debug' )
 				}
 			} catch (err) { self.logger.darconlog( err ) }
 		} )
@@ -302,14 +301,14 @@ Object.assign( Darcon.prototype, {
 
 		return entity
 	},
-	async updateServicesOf ( name ) {
+	async proclaim ( name, _proclaim ) {
 		if ( !this.ins[ name ] ) throw BaseErrors.NoSuchEntity( { entity: name, message: 'updateServices' } )
 
 		let entity = this.ins[ name ].entity
 		let functions = _.functionNames( entity, true ).filter( (fnName) => { return !fnName.startsWith( HIDDEN_SERVICES_PREFIX ) } )
 		this.ins[ name ].services = functions
 
-		this.ins[ name ].entity._servicesUpdated = true
+		this.ins[ name ].entity._proclaim = _proclaim
 
 		return OK
 	},
@@ -427,10 +426,10 @@ Object.assign( Darcon.prototype, {
 					nodeID: self.nodeID,
 					entityVersion: entity.version,
 					projectVersion: VERSION,
-					servicesUpdated: !!entity.entity._servicesUpdated
+					proclaim: entity.entity._proclaim || ''
 				}
 				self.natsServer.publish( SERVICES_REPORTS, self.strict ? JSON.stringify( await CommPresencer.derive( report ) ) : JSON.stringify( report ) )
-				entity.entity._servicesUpdated = false
+				entity.entity._proclaim = ''
 			}
 		} catch ( err ) {
 			self.logger.darconlog( err )
