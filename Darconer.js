@@ -27,6 +27,7 @@ let { Configurator } = require( './models/Configuration' )
 let { defined } = require( './util/Helper' )
 
 let PinoLogger = require('./PinoLogger')
+const Proback = require('proback.js')
 
 
 function chunkString (str, size) {
@@ -64,6 +65,16 @@ Object.assign( Darcon.prototype, {
 		let id = ids[ Math.floor( Math.random( ) * ids.length ) ]
 		return id
 	},
+	async tryconnect () { let self = this
+		try {
+			await self.connect()
+			self._recc = true
+		} catch ( err ) {
+			setTimeout( () => {
+				self.tryconnect()
+			}, self.connectTimeWait, self.connectionPatience )
+		}
+	},
 	async init (config = {}) { let self = this
 		this.name = config.name || 'Daconer'
 		config.logger = config.logger || PinoLogger( this.name, { level: this.logLevel, prettyPrint: process.env.DARCON_LOG_PRETTY || false } )
@@ -83,7 +94,13 @@ Object.assign( Darcon.prototype, {
 		}
 		this.chunks = {}
 
-		await this.connect( )
+
+
+		self._recc = false
+		self.tryconnect( ).catch( (err) => { self.logger.darconlog(err) } )
+		await Proback.until( () => { return !!self._recc }, self.connectTimeWait, self.connectionPatience )
+
+
 
 		this.reporter = setInterval( () => { self.reportStatus() }, this.reporterInterval )
 		this.keeper = setInterval( () => { self.checkPresence() }, this.keeperInterval )
@@ -328,9 +345,7 @@ Object.assign( Darcon.prototype, {
 				})
 				self.natsServer.on('error', (err) => {
 					self.logger.darconlog( err )
-					setTimeout( () => {
-						self.connect().catch( (err) => { self.logger.darconlog(err) } )
-					}, self.connectTimeWait || 2500 )
+					reject(err)
 				} )
 				self.natsServer.on('close', () => {
 					self.logger.darconlog( null, 'NATS connection closed' )

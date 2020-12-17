@@ -8,6 +8,7 @@ module.exports = {
 
 	maxReconnectAttempts: -1,
 	reconnectTimeWait: 250,
+	connectionPatience: -1,
 
 	strict: false,
 
