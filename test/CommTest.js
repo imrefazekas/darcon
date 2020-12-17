@@ -23,7 +23,7 @@ async function start () {
 		trace (obj) { },
 		info () { },
 		error () { },
-		darconlog () { }
+		darconlog () { console.log( arguments ) }
 	}
 	await Darcon.init( config )
 

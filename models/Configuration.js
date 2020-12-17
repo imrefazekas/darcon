@@ -25,6 +25,7 @@ let Configurator = newQuanstructor( 'Configurator', {
 
 	maxReconnectAttempts: { default: -1, validation: VALIDATION_NUM },
 	reconnectTimeWait: { default: 250, validation: VALIDATION_NUM },
+	connectTimeWait: { default: 2500, validation: VALIDATION_NUM },
 
 	strict: { default: false, validation: VALIDATION_BOOL },
 

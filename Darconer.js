@@ -328,21 +328,24 @@ Object.assign( Darcon.prototype, {
 				})
 				self.natsServer.on('error', (err) => {
 					self.logger.darconlog( err )
+					setTimeout( () => {
+						self.connect().catch( (err) => { self.logger.darconlog(err) } )
+					}, self.connectTimeWait || 2500 )
 				} )
 				self.natsServer.on('close', () => {
-					self.logger.darconlog( null, 'NATS connection closed')
+					self.logger.darconlog( null, 'NATS connection closed' )
 				} )
 				self.natsServer.on('disconnect', function () {
-					self.logger.darconlog( null, 'NATS disconnected')
+					self.logger.darconlog( null, 'NATS disconnected' )
 				})
 
 				self.natsServer.on('reconnecting', function () {
-					self.logger.darconlog( null, 'NATS reconnecting...')
-					self.resetup().catch( (err) => { self.logger.darconlog(err) } )
+					self.logger.darconlog( null, 'NATS reconnecting...' )
 				})
 
 				self.natsServer.on('reconnect', function (nc) {
-					self.logger.darconlog( null, 'NATS reconnected')
+					self.logger.darconlog( null, 'NATS reconnected' )
+					self.resetup().catch( (err) => { self.logger.darconlog(err) } )
 				})
 
 				if ( self.reponseTolerance > 0 ) {
