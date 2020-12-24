@@ -126,8 +126,14 @@ Object.assign( Darcon.prototype, {
 					self.logger.darconlog( null, `Entity ${present.entity} at ${this.name} appeared...`, {}, 'debug' )
 				}
 
-				if (present.proclaim && present.proclaim !== 'proclaim' && self[present.proclaim] ) {
-					self[ present.proclaim ]( self, present.entity, present.nodeID ).catch( (err) => { self.logger.darconlog(err) } )
+				if (present.proclaim && present.proclaim !== 'proclaim' ) {
+					if ( self[present.proclaim] )
+						self[ present.proclaim ]( self, present.entity, present.nodeID ).catch( (err) => { self.logger.darconlog(err) } )
+					else
+						for ( let name in self.ins ) {
+							if ( self.ins[name].entity[ present.proclaim ] )
+								self.ins[name].entity[ present.proclaim ]( present.entity, present.nodeID ).catch( (err) => { self.logger.darconlog(err) } )
+						}
 					self.logger.darconlog( null, `Entity ${present.entity} at ${this.name} proclaimed: ${present.proclaim}`, {}, 'debug' )
 				}
 			} catch (err) { self.logger.darconlog( err ) }
@@ -318,7 +324,7 @@ Object.assign( Darcon.prototype, {
 
 		return entity
 	},
-	async proclaim ( name, _proclaim ) {
+	async proclaim ( name, _proclaim ) { let self = this
 		if ( !this.ins[ name ] ) throw BaseErrors.NoSuchEntity( { entity: name, message: 'updateServices' } )
 
 		let entity = this.ins[ name ].entity
@@ -326,6 +332,7 @@ Object.assign( Darcon.prototype, {
 		this.ins[ name ].services = functions
 
 		this.ins[ name ].entity._proclaim = _proclaim
+		this.reportStatus().catch( (err) => { self.logger.darconlog(err) } )
 
 		return OK
 	},
