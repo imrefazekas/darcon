@@ -11,12 +11,14 @@ const fs = require('fs')
 const path = require('path')
 let VERSION = exports.VERSION = JSON.parse( fs.readFileSync( path.join( __dirname, 'package.json'), 'utf8' ) ).version
 
-let { MODE_REQUEST, MODE_INFORM, MODE_DELEGATE, CommPacketer, CommPresencer } = require( './models/Packet' )
+let { MODE_REQUEST, MODE_INFORM, MODE_DELEGATE, CommPacketer, CommPresencer, CommProclaimer } = require( './models/Packet' )
 
 let { BaseErrors, ErrorCreator } = require( './util/Errors' )
 
 const HIDDEN_SERVICES_PREFIX = '_'
+const ENTITY_UPDATED = 'entityUpdated'
 const SERVICES_REPORTS = 'darcon_service_reports'
+const PROCLAIMS = 'darcon_proclaims'
 const UNDEFINED = 'ToBeFilled'
 const SEPARATOR = '_'
 const GATER = 'Gater'
@@ -45,6 +47,7 @@ function Darcon () {}
 
 Object.assign( Darcon.prototype, {
 	HIDDEN_SERVICES_PREFIX,
+	ENTITY_UPDATED,
 	SEPARATOR,
 	name: UNDEFINED,
 	nodeID: UNDEFINED,
@@ -92,6 +95,10 @@ Object.assign( Darcon.prototype, {
 			name: SERVICES_REPORTS,
 			entity: { name: SERVICES_REPORTS }
 		}
+		this.ins[ PROCLAIMS ] = {
+			name: PROCLAIMS,
+			entity: { name: PROCLAIMS }
+		}
 		this.chunks = {}
 
 
@@ -104,6 +111,21 @@ Object.assign( Darcon.prototype, {
 
 		this.reporter = setInterval( () => { self.reportStatus() }, this.reporterInterval )
 		this.keeper = setInterval( () => { self.checkPresence() }, this.keeperInterval )
+
+		await this.innerCreateIn( PROCLAIMS, '', async function ( message ) {
+			try {
+				let proclaim = self.strict ? await CommProclaimer.derive( JSON.parse( message ) ) : JSON.parse( message )
+				let pMsg = proclaim.message
+				if ( self[ pMsg ] )
+					self[ pMsg ]( self, proclaim.entity, proclaim.terms || {} ).catch( (err) => { self.logger.darconlog(err) } )
+				else
+					for ( let name in self.ins ) {
+						if ( self.ins[name].entity[ pMsg ] )
+							self.ins[name].entity[ pMsg ]( proclaim.entity, proclaim.terms || {} ).catch( (err) => { self.logger.darconlog(err) } )
+					}
+				self.logger.darconlog( null, `Entity ${proclaim.entity} at ${this.name} proclaimed: ${pMsg}`, {}, 'debug' )
+			} catch (err) { self.logger.darconlog( err ) }
+		} )
 
 		await this.innerCreateIn( SERVICES_REPORTS, '', async function ( message ) {
 			try {
@@ -124,17 +146,6 @@ Object.assign( Darcon.prototype, {
 						self.entityAppeared( self, present.entity, present.nodeID ).catch( (err) => { self.logger.darconlog(err) } )
 
 					self.logger.darconlog( null, `Entity ${present.entity} at ${this.name} appeared...`, {}, 'debug' )
-				}
-
-				if (present.proclaim && present.proclaim !== 'proclaim' ) {
-					if ( self[present.proclaim] )
-						self[ present.proclaim ]( self, present.entity, present.nodeID ).catch( (err) => { self.logger.darconlog(err) } )
-					else
-						for ( let name in self.ins ) {
-							if ( self.ins[name].entity[ present.proclaim ] )
-								self.ins[name].entity[ present.proclaim ]( present.entity, present.nodeID ).catch( (err) => { self.logger.darconlog(err) } )
-						}
-					self.logger.darconlog( null, `Entity ${present.entity} at ${this.name} proclaimed: ${present.proclaim}`, {}, 'debug' )
 				}
 			} catch (err) { self.logger.darconlog( err ) }
 		} )
@@ -324,15 +335,22 @@ Object.assign( Darcon.prototype, {
 
 		return entity
 	},
-	async proclaim ( name, _proclaim ) { let self = this
-		if ( !this.ins[ name ] ) throw BaseErrors.NoSuchEntity( { entity: name, message: 'updateServices' } )
+
+	async proclaim ( name, message, terms = {} ) { let self = this
+		if ( !this.ins[ name ] ) throw BaseErrors.NoSuchEntity( { entity: name, message } )
 
 		let entity = this.ins[ name ].entity
-		let functions = _.functionNames( entity, true ).filter( (fnName) => { return !fnName.startsWith( HIDDEN_SERVICES_PREFIX ) } )
-		this.ins[ name ].services = functions
+		if ( message === ENTITY_UPDATED ) {
+			let functions = _.functionNames( entity, true ).filter( (fnName) => { return !fnName.startsWith( HIDDEN_SERVICES_PREFIX ) } )
+			this.ins[ name ].services = functions
+		}
 
-		this.ins[ name ].entity._proclaim = _proclaim
-		this.reportStatus().catch( (err) => { self.logger.darconlog(err) } )
+		let proclaim = { entity: name, nodeID: self.nodeID, message, terms }
+		try {
+			self.natsServer.publish( PROCLAIMS, self.strict ? JSON.stringify( await CommProclaimer.derive( proclaim ) ) : JSON.stringify( proclaim ) )
+		} catch ( err ) {
+			self.logger.darconlog( err )
+		}
 
 		return OK
 	},
@@ -442,7 +460,7 @@ Object.assign( Darcon.prototype, {
 
 		try {
 			for (let name in this.ins) {
-				if (name === SERVICES_REPORTS || name === GATER) continue
+				if (name === PROCLAIMS || name === SERVICES_REPORTS || name === GATER) continue
 
 				let entity = this.ins[ name ]
 
@@ -450,11 +468,9 @@ Object.assign( Darcon.prototype, {
 					entity: entity.name,
 					nodeID: self.nodeID,
 					entityVersion: entity.version,
-					projectVersion: VERSION,
-					proclaim: entity.entity._proclaim || ''
+					projectVersion: VERSION
 				}
 				self.natsServer.publish( SERVICES_REPORTS, self.strict ? JSON.stringify( await CommPresencer.derive( report ) ) : JSON.stringify( report ) )
-				entity.entity._proclaim = ''
 			}
 		} catch ( err ) {
 			self.logger.darconlog( err )

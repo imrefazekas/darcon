@@ -70,10 +70,18 @@ let CommPresencer = newQuanstructor( 'CommPresencer', {
 	entityVersion: { default: '1.0.0', validation: VALIDATION_STR }
 } )
 
+let CommProclaimer = newQuanstructor( 'CommProclaimer', {
+	entity: { validation: VALIDATION_STR },
+	nodeID: { validation: VALIDATION_STR },
+	message: { validation: VALIDATION_STR },
+	terms: { default: {}, validation: VALIDATION_OBJ },
+} )
+
 module.exports = {
 	MODE_REQUEST,
 	MODE_INFORM,
 	MODE_DELEGATE,
 	CommPacketer,
-	CommPresencer
+	CommPresencer,
+	CommProclaimer
 }
