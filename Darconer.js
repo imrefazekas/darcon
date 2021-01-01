@@ -116,12 +116,13 @@ Object.assign( Darcon.prototype, {
 			try {
 				let proclaim = self.strict ? await CommProclaimer.derive( JSON.parse( message ) ) : JSON.parse( message )
 				let pMsg = proclaim.message
+				let hMsg = HIDDEN_SERVICES_PREFIX + proclaim.message
 				if ( self[ pMsg ] )
 					self[ pMsg ]( self, proclaim.entity, proclaim.terms || {} ).catch( (err) => { self.logger.darconlog(err) } )
 				else
 					for ( let name in self.ins ) {
-						if ( self.ins[name].entity[ pMsg ] )
-							self.ins[name].entity[ pMsg ]( proclaim.entity, proclaim.terms || {} ).catch( (err) => { self.logger.darconlog(err) } )
+						if ( self.ins[name].entity[ hMsg ] )
+							self.ins[name].entity[ hMsg ]( proclaim.entity, proclaim.terms || {} ).catch( (err) => { self.logger.darconlog(err) } )
 					}
 				self.logger.darconlog( null, `Entity ${proclaim.entity} at ${this.name} proclaimed: ${pMsg}`, {}, 'debug' )
 			} catch (err) { self.logger.darconlog( err ) }
