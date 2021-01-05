@@ -337,13 +337,14 @@ Object.assign( Darcon.prototype, {
 	},
 
 	async proclaim ( name, message, terms = {} ) { let self = this
-		if ( !this.ins[ name ] ) throw BaseErrors.NoSuchEntity( { entity: name, message } )
-
-		let entity = this.ins[ name ].entity
-		if ( message === ENTITY_UPDATED ) {
-			let functions = _.functionNames( entity, true ).filter( (fnName) => { return !fnName.startsWith( HIDDEN_SERVICES_PREFIX ) } )
-			this.ins[ name ].services = functions
-		}
+		if ( this.ins[ name ] ){
+			let entity = this.ins[ name ].entity
+			if ( message === ENTITY_UPDATED ) {
+				let functions = _.functionNames( entity, true ).filter( (fnName) => { return !fnName.startsWith( HIDDEN_SERVICES_PREFIX ) } )
+				this.ins[ name ].services = functions
+			}
+		} else if ( self.strict )
+			throw BaseErrors.NoSuchEntity( { entity: name, message } )
 
 		let proclaim = { entity: name, nodeID: self.nodeID, message, terms }
 		try {
