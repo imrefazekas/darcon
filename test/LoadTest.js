@@ -1,10 +1,10 @@
 
-let config = require('../config')
-config.nats.url = 'nats://aa1201276d68c4edaae73dca50e36d51-1193483644.eu-central-1.elb.amazonaws.com:4222'
-config.reponseTolerance = 10000
+let config = require('config')
+config.nats.url = process.env.NATS_URL || 'nats://localhost:4222'
+config.reponseTolerance = process.env.RESP_TOLERANCE ? Number(process.env.RESP_TOLERANCE) : 10000
 
 
-let Darconer = require( '../Darconer' )
+let Darconer = require( 'darconer' )
 let Darcon = new Darconer()
 
 let { MODE_REQUEST, MODE_INFORM, MODE_DELEGATE } = require( '../models/Packet' )
@@ -34,9 +34,9 @@ async function start () {
 	await Darcon.init( config )
 }
 
-const duration = 60 * 1000
-const CPS = 60
-const RQS = 1000
+const duration = process.env.DURATION ? Number(process.env.DURATION) : 60 * 1000
+const CPS = process.env.CPS ? Number(process.env.CPS) : 60
+const RQS = process.env.RQS ? Number(process.env.RQS) : 1000
 
 let success = 0, sum = 0, time
 async function comm () {

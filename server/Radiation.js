@@ -30,17 +30,17 @@ Object.assign( Radiator.prototype, {
 				let terms = _.pick( request, options.attributesToPass || [] )
 
 				let ps = newRequest.params
-				terms.flowID = ps.flowID
-				terms.processID = ps.processID
+				terms.flowID = ps.flowID || request.flowID
+				terms.processID = ps.processID || request.processID
 
 				try {
 					if ( options.gatekeeper )
-						await options.gatekeeper( request, ps.flowID, ps.processID, ps.entity, ps.message, parameters )
+						await options.gatekeeper( request, terms.flowID, terms.processID, ps.entity, ps.message, parameters )
 
-					let res = await Darcon.comm( ps.mode || MODE_REQUEST, ps.flowID, ps.processID, ps.entity, ps.message, parameters, terms )
+					let res = await Darcon.comm( ps.mode || MODE_REQUEST, terms.flowID, terms.processID, ps.entity, ps.message, parameters, terms )
 
 					if ( options.conformer )
-						await options.conformer( request, ps.flowID, ps.processID, ps.entity, ps.message, res )
+						await options.conformer( request, terms.flowID, terms.processID, ps.entity, ps.message, res )
 
 					return res
 				} catch (err) {
@@ -64,14 +64,17 @@ Object.assign( Radiator.prototype, {
 
 				let terms = _.pick( request, options.attributesToPass || [] )
 
+				terms.flowID = content.flowID || request.flowID
+				terms.processID = content.processID || request.processID
+
 				try {
 					if ( options.gatekeeper )
-						await options.gatekeeper( request, content.flowID, content.processID, content.entity, content.message, parameters )
+						await options.gatekeeper( request, terms.flowID, terms.processID, content.entity, content.message, parameters )
 
-					let res = await Darcon.comm( content.mode || MODE_REQUEST, content.flowID, content.processID, content.entity, content.message, parameters, terms )
+					let res = await Darcon.comm( content.mode || MODE_REQUEST, terms.flowID, terms.processID, content.entity, content.message, parameters, terms )
 
 					if ( options.conformer )
-						await options.conformer( request, content.flowID, content.processID, content.entity, content.message, res )
+						await options.conformer( request, terms.flowID, terms.processID, content.entity, content.message, res )
 
 					return res
 				} catch (err) {
