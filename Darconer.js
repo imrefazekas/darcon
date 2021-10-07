@@ -33,7 +33,6 @@ const H_UID = 'uid'
 let { defined } = require( './util/Helper' )
 
 let PinoLogger = require('./PinoLogger')
-const Proback = require('proback.js')
 
 function chunk(arr, chunkSize) {
 	var R = []
@@ -92,8 +91,8 @@ Object.assign( Darcon.prototype, {
 
 		await self.connect()
 
-		// this.reporter = setInterval( () => { self.reportStatus() }, this.reporterInterval )
-		// this.keeper = setInterval( () => { self.checkPresence() }, this.keeperInterval )
+		this.reporter = setInterval( () => { self.reportStatus() }, this.reporterInterval )
+		this.keeper = setInterval( () => { self.checkPresence() }, this.keeperInterval )
 
 		await this._innerCreateIn( PROCLAIMS, '', async function ( message ) {
 			try {
@@ -418,14 +417,16 @@ Object.assign( Darcon.prototype, {
 				if (name === PROCLAIMS || name === SERVICES_REPORTS || name === GATER) continue
 
 				let entity = this.ins[ name ]
-
 				let report = {
+					uid: self.clerobee.generate(),
 					entity: entity.name,
 					nodeID: self.nodeID,
 					entityVersion: entity.version,
 					projectVersion: VERSION
 				}
-				await self.natsServer.publish( SERVICES_REPORTS, jc.encode( self.strict ? await newPresencer( report ) : report ) )
+				let h = NATS.headers()
+				h.append(H_UID, report.uid)
+				await self.natsServer.publish( SERVICES_REPORTS, jc.encode( self.strict ? await newPresencer( report ) : report ), { headers: h } )
 			}
 		} catch ( err ) {
 			self.logger.darconlog( err )
