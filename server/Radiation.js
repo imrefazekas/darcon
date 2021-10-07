@@ -1,6 +1,6 @@
 const _ = require( 'isa.js' )
 
-let { MODE_REQUEST } = require( '../models/Packet' )
+let { MODE_REQUEST } = require( '../Models' )
 
 function extractRequest ( request, options = {} ) {
 	let newRequest = _.pick(request, ['headers', 'body', 'query', 'params', 'packet'])
@@ -88,29 +88,31 @@ Object.assign( Radiator.prototype, {
 	ws ( Darcon, fastify, options = {}, fastifyConfig = {} ) {
 		if (!options.darcon) return
 
+		let prefix = fastifyConfig.apiPrefix || ''
+		let path = prefix + options.darcon
+
 		async function processSocketData (socket, data) {
 			if (fastifyConfig.wsPreprocess) await fastifyConfig.wsPreprocess( socket, data )
 			let res = await Darcon.comm( data.mode || MODE_REQUEST, data.flowID, data.processID, data.entity, data.message, data.params, data.terms )
 			socket.send( JSON.stringify( { id: data.id, result: res } ) )
 		}
 
-		function handle (conn) {
-			conn.socket.on('message', (data) => {
-				try {
-					if ( _.isString(data) )
-						data = JSON.parse( data )
-				} catch (err) { throw err }
-				return processSocketData( conn.socket, data ).catch( (err) => {
-					options.logger.error( err )
-					conn.socket.send( JSON.stringify( { id: data.id, error: err.message } ) )
-				} )
-			} )
-			// conn.pipe(conn) // creates an echo server
-		}
-
 		fastify.register(require('fastify-websocket'), {
-			handle,
-			options: { maxPayload: 1048576, noServer: true }
+			options: { path, maxPayload: options.maxPayload || 1048576 }
+		})
+
+		fastify.get(path, { websocket: true }, (connection, req ) => {
+			connection.socket.on('message', message => {
+				if ( Buffer.isBuffer( message ) )
+					message = message.toString()
+				try {
+					message = JSON.parse( message )
+				} catch (err) { throw err }
+				return processSocketData( connection.socket, message ).catch( (err) => {
+					options.logger.error( err )
+					connection.socket.send( JSON.stringify( { id: message.id, error: err.message } ) )
+				} )
+			})
 		})
 	}
 } )

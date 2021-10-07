@@ -1,6 +1,6 @@
 # darcon
 
-Simple Messaging Bus for Node.js entities over NatsIO
+Simple Messaging Bus for Node.js entities over [NatsIO](https://nats.io)
 
 The library allows one to transparently publish and scale plain vanilla JS objects to a running [nats.io](https://nats.io) instance as services objects.
 
@@ -29,7 +29,7 @@ const Darconer = require('darcon')
 // ...
 await Darconer.init( {
 	nats: {
-		url: 'nats://localhost:4222'
+		servers: 'nats://localhost:4222'
 	},
 
 	log: {

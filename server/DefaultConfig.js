@@ -28,6 +28,7 @@ module.exports = {
 		// async conformer ( request, flowID, processID, entity, message, res ) {}
 	},
 	ws: {
-		darcon: '/DarconWS'
+		darcon: '/DarconWS',
+		maxPayload: 1048576
 	}
 }

@@ -1,4 +1,5 @@
 let NATS = require('nats')
+const jc = NATS.JSONCodec()
 
 const _ = require( 'isa.js' )
 
@@ -11,7 +12,7 @@ const fs = require('fs')
 const path = require('path')
 let VERSION = exports.VERSION = JSON.parse( fs.readFileSync( path.join( __dirname, 'package.json'), 'utf8' ) ).version
 
-let { MODE_REQUEST, MODE_INFORM, MODE_DELEGATE, CommPacketer, CommPresencer, CommProclaimer } = require( './models/Packet' )
+let { MODE_REQUEST, MODE_INFORM, MODE_DELEGATE, newPacket, newPresencer, newConfig } = require( './Models' )
 
 let { BaseErrors, ErrorCreator } = require( './util/Errors' )
 
@@ -25,22 +26,20 @@ const GATER = 'Gater'
 
 const OK = 'OK'
 
-let { Configurator } = require( './models/Configuration' )
+const H_CHUNK_NO = 'chunkNO'
+const H_CHUNK_COUNT = 'chunkCount'
+const H_UID = 'uid'
+
 let { defined } = require( './util/Helper' )
 
 let PinoLogger = require('./PinoLogger')
 const Proback = require('proback.js')
 
-
-function chunkString (str, size) {
-	const numChunks = Math.ceil(str.length / size)
-	const chunks = new Array(numChunks)
-
-	for (let i = 0, o = 0; i < numChunks; ++i, o += size) {
-		chunks[i] = str.substr(o, size)
-	}
-
-	return chunks
+function chunk(arr, chunkSize) {
+	var R = []
+	for (let i=0,len=arr.length; i < len; i+=chunkSize)
+		R.push(arr.slice(i,i+chunkSize))
+	return R;
 }
 
 function Darcon () {}
@@ -68,21 +67,11 @@ Object.assign( Darcon.prototype, {
 		let id = ids[ Math.floor( Math.random( ) * ids.length ) ]
 		return id
 	},
-	async tryconnect () { let self = this
-		try {
-			await self.connect()
-			self._recc = true
-		} catch ( err ) {
-			setTimeout( () => {
-				self.tryconnect()
-			}, self.connectTimeWait, self.connectionPatience )
-		}
-	},
 	async init (config = {}) { let self = this
 		this.name = config.name || 'Daconer'
 		config.logger = config.logger || PinoLogger( this.name, { level: this.logLevel, prettyPrint: process.env.DARCON_LOG_PRETTY || false } )
 
-		config = await Configurator.derive( config )
+		config = await newConfig( config )
 		assigner.assign( self, config )
 
 		this.clerobee = new Clerobee( this.idLength )
@@ -101,20 +90,14 @@ Object.assign( Darcon.prototype, {
 		}
 		this.chunks = {}
 
+		await self.connect()
 
+		// this.reporter = setInterval( () => { self.reportStatus() }, this.reporterInterval )
+		// this.keeper = setInterval( () => { self.checkPresence() }, this.keeperInterval )
 
-		self._recc = false
-		self.tryconnect( ).catch( (err) => { self.logger.darconlog(err) } )
-		await Proback.until( () => { return !!self._recc }, self.connectTimeWait, self.connectionPatience )
-
-
-
-		this.reporter = setInterval( () => { self.reportStatus() }, this.reporterInterval )
-		this.keeper = setInterval( () => { self.checkPresence() }, this.keeperInterval )
-
-		await this.innerCreateIn( PROCLAIMS, '', async function ( message ) {
+		await this._innerCreateIn( PROCLAIMS, '', async function ( message ) {
 			try {
-				let proclaim = self.strict ? await CommProclaimer.derive( JSON.parse( message ) ) : JSON.parse( message )
+				let proclaim = self.strict ? await newProclaimer( message ) : message
 				let pMsg = proclaim.message
 				if ( self[ pMsg ] )
 					self[ pMsg ]( self, proclaim.entity, proclaim.terms || {} ).catch( (err) => { self.logger.darconlog(err) } )
@@ -127,9 +110,9 @@ Object.assign( Darcon.prototype, {
 			} catch (err) { self.logger.darconlog( err ) }
 		} )
 
-		await this.innerCreateIn( SERVICES_REPORTS, '', async function ( message ) {
+		await this._innerCreateIn( SERVICES_REPORTS, '', async function ( message ) {
 			try {
-				let present = self.strict ? await CommPresencer.derive( JSON.parse( message ) ) : JSON.parse( message )
+				let present = self.strict ? await newPresencer( message ) : message
 
 				if ( !self.presences[ present.entity ] )
 					self.presences[ present.entity ] = {}
@@ -171,11 +154,44 @@ Object.assign( Darcon.prototype, {
 		}
 	},
 
-	async _validateMessage (message) {
-		if (this.Validator)
-			await this.Validator.validateMessage( message )
+	async _innerCreateIn ( entityName, node, handler ) {
+		let self = this
 
-		return OK
+		let socketName = entityName + (node ? SEPARATOR + node : node)
+		self.natsServer.subscribe( socketName, { callback: (err, message) => {
+			let headers = message.headers ? {
+				[H_UID]: message.headers.get( H_UID ),
+				[H_CHUNK_NO]: message.headers.get( H_CHUNK_NO ),
+				[H_CHUNK_COUNT]: message.headers.get( H_CHUNK_COUNT )
+			} : { }
+			if (!headers[ H_UID ]) return
+
+			let dataArray = message.data
+
+			if ( headers[ H_CHUNK_COUNT ] ) {
+				if ( !self.chunks[ headers[ H_UID ] ] ) self.chunks[ headers[ H_UID ] ] = Array( headers[ H_CHUNK_COUNT ] )
+
+				self.chunks[ headers[ H_UID ] ][ headers[ H_CHUNK_NO ] ] = message.data
+
+				if( self.chunks[ headers[ H_UID ] ].findIndex( (element) => !element ) === -1 ) {
+					dataArray = new Uint8Array([]), arraySize = 0
+					for( let array of self.chunks[ headers[ H_UID ] ] ) {
+						dataArray.set(stream, arraySize )
+						arraySize += array.length
+					}
+					delete self.chunks[ incoming.uid ]
+				}
+				else return OK
+			}
+
+			handler( jc.decode( dataArray ) ).catch( (err) => {
+				self.logger.darconlog(err)
+			} )
+
+			return OK
+		} } )
+
+		self.logger.darconlog( null, `NATS SUBSCRIBE is made to ${socketName} on ${node}`, null, 'info' )
 	},
 
 	async processMessage (incoming) {
@@ -215,7 +231,7 @@ Object.assign( Darcon.prototype, {
 					}
 					else await self.ins[ incoming.comm.delegateEntity ].entity[ incoming.comm.delegateMessage ]( incoming.comm.response, terms )
 				} catch (err) {
-					self.logger.debug( err )
+					self.logger.darconlog( err )
 				}
 				return OK
 			}
@@ -237,14 +253,15 @@ Object.assign( Darcon.prototype, {
 				if (!self.ins[ incoming.comm.entity ]) throw BaseErrors.NoSuchEntity( { entity: incoming.comm.entity, message: incoming.comm.message } )
 				if (!self.ins[ incoming.comm.entity ].entity[ incoming.comm.message ]) throw BaseErrors.NoSuchService( { service: incoming.comm.message, entity: incoming.comm.entity } )
 
-				await self._validateMessage( incoming.comm )
+				if (this.Validator)
+					await this.Validator.validateMessage( message )
 
 				let paramsToPass = assigner.cloneObject( incoming.comm.params ).concat( [ terms ] )
 				let response = await self.ins[ incoming.comm.entity ].entity[ incoming.comm.message ]( ...paramsToPass )
 				if (!defined(response)) throw BaseErrors.NoReturnValue( { fn: incoming.comm.message, entity: incoming.comm.entity } )
 				incoming.comm.response = response
 			} catch (err) {
-				self.logger.debug( err )
+				self.logger.darconlog( err )
 				incoming.comm.error = { message: err.message || err.toString(), code: err.code || err.errorCode || err.errorcode || '-1', errorName: err.errorName || '' }
 			}
 
@@ -253,11 +270,11 @@ Object.assign( Darcon.prototype, {
 			incoming.comm.responseDate = Date.now()
 			if (incoming.comm.mode === MODE_DELEGATE) {
 				let socketName = incoming.comm.delegateEntity + SEPARATOR + self._randomNodeID( incoming.comm.delegateEntity, incoming.comm.message )
-				self.sendOut( socketName, incoming )
+				self.sendOut( socketName, incoming ).catch( (err) => { self.logger.darconlog( err ) } )
 			}
 			else {
 				let socketName = incoming.comm.source + SEPARATOR + incoming.comm.sourceNodeID
-				self.sendOut( socketName, incoming )
+				self.sendOut( socketName, incoming ).catch( (err) => { self.logger.darconlog( err ) } )
 			}
 
 			return OK
@@ -271,7 +288,7 @@ Object.assign( Darcon.prototype, {
 	async unpublish (name) {
 		if ( this.ins[ name ] ) {
 			let socketName = name + SEPARATOR + this.nodeID
-			this.natsServer.unsubscribe( socketName )
+			await this.natsServer.unsubscribe( socketName )
 			delete this.ins[ name ]
 		}
 	},
@@ -299,26 +316,12 @@ Object.assign( Darcon.prototype, {
 		if (entity.init)
 			await entity.init( cfg )
 
-		await self.innerCreateIn( entity.name, self.nodeID, async function ( message ) {
+		await self._innerCreateIn( entity.name, self.nodeID, async function ( message ) {
 			try {
-				let incoming = self.strict ? await CommPacketer.derive( JSON.parse( message ) ) : JSON.parse( message )
-				if ( incoming.chunk && incoming.chunk.no > 0 ) {
-					if (!self.chunks[ incoming.uid ]) self.chunks[ incoming.uid ] = []
-					self.chunks[ incoming.uid ].push( incoming.chunk.data )
-					if ( self.chunks[ incoming.uid ].length === incoming.chunk.of ) {
-						let packaet = self.chunks[ incoming.uid ].sort( (a, b) => { return a.of < b.of } ).reduce( (a, b) => { return a.concat(b) } )
-						let chLength = self.chunks[ incoming.uid ]
-						delete self.chunks[ incoming.uid ]
+				let incoming = self.strict ? await newPacket( message ) : message
 
-						let realPacket = JSON.parse( packaet )
-						self.logger[ self.logLevel ]( { darcon: self.name, nodeID: self.nodeID, uid: realPacket.uid, flowID: realPacket.comm.flowID, processID: realPacket.comm.processID, received: { chunks: chLength } } )
-						self.processMessage( realPacket ).catch( (err) => { self.logger.darconlog( err ) } )
-					}
-				}
-				else {
-					self.logger[ self.logLevel ]( { darcon: self.name, nodeID: self.nodeID, uid: incoming.uid, flowID: incoming.comm.flowID, processID: incoming.comm.processID, received: incoming } )
-					self.processMessage( incoming ).catch( (err) => { self.logger.darconlog( err ) } )
-				}
+				self.logger[ self.logLevel ]( { darcon: self.name, nodeID: self.nodeID, uid: incoming.uid, flowID: incoming.comm.flowID, processID: incoming.comm.processID, received: incoming } )
+				self.processMessage( incoming ).catch( (err) => { self.logger.darconlog( err ) } )
 			} catch (err) {
 				self.logger.darconlog( err )
 			}
@@ -348,7 +351,7 @@ Object.assign( Darcon.prototype, {
 
 		let proclaim = { entity: name, nodeID: self.nodeID, message, terms }
 		try {
-			self.natsServer.publish( PROCLAIMS, self.strict ? JSON.stringify( await CommProclaimer.derive( proclaim ) ) : JSON.stringify( proclaim ) )
+			await self.natsServer.publish( PROCLAIMS, jc.encode( self.strict ? await newProclaimer( proclaim ) : proclaim ) )
 		} catch ( err ) {
 			self.logger.darconlog( err )
 		}
@@ -359,85 +362,36 @@ Object.assign( Darcon.prototype, {
 	async connect () {
 		let self = this
 
-		return new Promise( (resolve, reject) => {
-			self.logger.darconlog( null, 'Connecting to NATS:', self.nats.url, 'info' )
+		self.logger.darconlog( null, 'Connecting to NATS:', self.nats, 'info' )
 
-			try {
-				self.natsServer = NATS.connect( self.nats )
+		try {
+			self.natsServer = await NATS.connect( self.nats )
 
-				self.natsServer.on('connect', function (nc) {
-					self.logger.darconlog( null, 'NATS connection is made', { }, 'warn' )
-					resolve( OK )
-				})
-				self.natsServer.on('error', (err) => {
-					self.logger.darconlog( err )
-					reject(err)
-				} )
-				self.natsServer.on('close', () => {
-					self.logger.darconlog( null, 'NATS connection closed' )
-				} )
-				self.natsServer.on('disconnect', function () {
-					self.logger.darconlog( null, 'NATS disconnected' )
-				})
-
-				self.natsServer.on('reconnecting', function () {
-					self.logger.darconlog( null, 'NATS reconnecting...' )
-				})
-
-				self.natsServer.on('reconnect', function (nc) {
-					self.logger.darconlog( null, 'NATS reconnected' )
-					self.resetup().catch( (err) => { self.logger.darconlog(err) } )
-				})
-
-				if ( self.reponseTolerance > 0 ) {
-					self.cleaner = setInterval( function () {
-						self.cleanupMessages()
-					}, self.reponseTolerance )
-				}
-			} catch (err) { reject(err) }
-		} )
+			self.logger.darconlog( null, 'NATS connection is made', { }, 'warn' )
+		} catch (err) { reject(err) }
 	},
 
 	async close () {
 		var self = this
-		return new Promise( async (resolve, reject) => {
-			self.finalised = true
+		self.finalised = true
 
-			if (self.reporter)
-				clearInterval( self.reporter )
-			if (self.keeper)
-				clearInterval( self.keeper )
-			if (self.cleaner)
-				clearInterval( self.cleaner )
+		if (self.reporter)
+			clearInterval( self.reporter )
+		if (self.keeper)
+			clearInterval( self.keeper )
+		if (self.cleaner)
+			clearInterval( self.cleaner )
 
-			for (let entityRef in self.ins) {
-				let entity = self.ins[entityRef].entity
-				if (entity.close)
-					entity.close().catch( (err) => { self.logger.darconlog(err) } )
-			}
+		for (let entityRef in self.ins) {
+			let entity = self.ins[entityRef].entity
+			if (entity.close)
+				entity.close().catch( (err) => { self.logger.darconlog(err) } )
+		}
 
-			try {
-				if ( self.natsServer )
-					self.natsServer.close()
-
-				resolve( OK )
-			} catch (err) {
-				reject(err)
-			}
-		} )
-	},
-
-	async innerCreateIn ( entityName, node, handler ) {
-		let self = this
-
-		let socketName = entityName + (node ? SEPARATOR + node : node)
-		self.natsServer.subscribe( socketName, (message) => {
-			handler(message).catch( (err) => {
-				self.logger.darconlog(err) } )
-			return OK
-		} )
-
-		self.logger.darconlog( null, 'NATS SUBSCRIBE is made.', { socketName, node }, 'info' )
+		if ( self.natsServer ) {
+			await self.natsServer.flush()
+  			await self.natsServer.close()
+		}
 	},
 
 	async cleanupMessages () {
@@ -471,7 +425,7 @@ Object.assign( Darcon.prototype, {
 					entityVersion: entity.version,
 					projectVersion: VERSION
 				}
-				self.natsServer.publish( SERVICES_REPORTS, self.strict ? JSON.stringify( await CommPresencer.derive( report ) ) : JSON.stringify( report ) )
+				await self.natsServer.publish( SERVICES_REPORTS, jc.encode( self.strict ? await newPresencer( report ) : report ) )
 			}
 		} catch ( err ) {
 			self.logger.darconlog( err )
@@ -507,20 +461,25 @@ Object.assign( Darcon.prototype, {
 	},
 
 	async sendOut ( socketName, packet ) {
-		let packetString = this.strict ? JSON.stringify( await CommPacketer.derive( packet ) ) : JSON.stringify( packet )
+		let packetBin = jc.encode( this.strict ? await newPacket( packet ) : packet )
 
-		if ( packetString.length >= this.maxCommSize )
+		if ( packetBin.length >= this.maxCommSize )
 			throw BaseErrors.PacketExceeded( { limit: this.maxCommSize } )
 
-		if ( packetString.length < this.commSize ) {
-			this.natsServer.publish( socketName, packetString )
+		if ( packetBin.length < this.commSize ) {
+			let h = NATS.headers()
+			h.append(H_UID, packet.uid)
+			await this.natsServer.publish( socketName, packetBin, { headers: h } )
 			this.logger[ this.logLevel ]( { darcon: this.name, nodeID: this.nodeID, packet: packet.uid, flowID: packet.comm.flowID, processID: packet.comm.processID, sent: packet } )
 		}
 		else {
-			let chunks = chunkString( packetString, this.commSize )
+			let chunks = chunk( packetBin, this.commSize )
 			for ( let i = 0; i < chunks.length; ++i ) {
-				let newPacket = { uid: packet.uid, chunk: { no: i + 1, of: chunks.length, data: chunks[ i ] } }
-				this.natsServer.publish( socketName, this.strict ? JSON.stringify( await CommPacketer.derive( newPacket ) ) : JSON.stringify( newPacket ) )
+				let h = NATS.headers()
+				h.append(H_CHUNK_NO, i + 1)
+				h.append(H_CHUNK_COUNT, chunks.length)
+				h.append(H_UID, packet.uid)
+				await this.natsServer.publish( socketName, packetBin, { headers: h } )
 			}
 			this.logger[ this.logLevel ]( { darcon: this.name, nodeID: this.nodeID, packet: packet.uid, flowID: packet.comm.flowID, processID: packet.comm.processID, sent: { chunks: chunks.length } } )
 		}

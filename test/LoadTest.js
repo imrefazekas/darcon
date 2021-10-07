@@ -1,13 +1,12 @@
 
-let config = require('config')
-config.nats.url = process.env.NATS_URL || 'nats://localhost:4222'
+let config = require('../config')
 config.reponseTolerance = process.env.RESP_TOLERANCE ? Number(process.env.RESP_TOLERANCE) : 10000
 
 
-let Darconer = require( 'darconer' )
+let Darconer = require( '../Darconer' )
 let Darcon = new Darconer()
 
-let { MODE_REQUEST, MODE_INFORM, MODE_DELEGATE } = require( '../models/Packet' )
+let { MODE_REQUEST, MODE_INFORM, MODE_DELEGATE } = require( '../Models' )
 
 const Clerobee = require( 'clerobee' )
 let clerobee = new Clerobee()

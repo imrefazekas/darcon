@@ -2,7 +2,7 @@ let config = require('../config')
 let Darconer = require( '../Darconer' )
 let Darcon = new Darconer()
 
-let { MODE_REQUEST, MODE_INFORM, MODE_DELEGATE } = require( '../models/Packet' )
+let { MODE_REQUEST, MODE_INFORM, MODE_DELEGATE } = require( '../Models' )
 
 const Clerobee = require( 'clerobee' )
 let clerobee = new Clerobee()
@@ -26,7 +26,8 @@ async function start () {
 		darconlog () { console.log( arguments ) }
 	}
 	await Darcon.init( config )
-
+}
+async function publish () {
 	await Darcon.publish(
 		{
 			name: 'Marie',
@@ -87,6 +88,8 @@ async function close () {
 }
 
 start().then( () => {
+	return publish()
+} ).then( () => {
 	return Proback.timeout( 5000 )
 } ).then( () => {
 	return comm( )

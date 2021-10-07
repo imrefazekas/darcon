@@ -14,7 +14,11 @@ module.exports = {
 	strict: false,
 
 	nats: {
-		url: 'nats://localhost:4222'
+		servers: 'nats://localhost:4222',
+		headers: true,
+		reconnect: true,
+		reconnectTimeWait: 10,
+		maxReconnectAttempts: -1
 	},
 
 	commSize: 1000000 / 2,

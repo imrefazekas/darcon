@@ -4,7 +4,7 @@ let Darcon = new Darconer()
 let ServerProto = require( '../server/Server' )
 let Server = new ServerProto()
 
-let { MODE_REQUEST, MODE_INFORM, MODE_DELEGATE } = require( '../models/Packet' )
+let { MODE_REQUEST, MODE_INFORM, MODE_DELEGATE } = require( '../Models' )
 
 const Clerobee = require( 'clerobee' )
 let clerobee = new Clerobee()
@@ -50,7 +50,6 @@ async function darconer () {
 			name: 'Marie',
 			version: '2.0.0',
 			async echo (...params) {
-				console.log('!!!!!!!!!!!!!!!!!!!!', params)
 				let terms = params[ params.length - 1 ]
 				return params.slice(0, -1).concat( await terms.request( 'Claire', 'extend', ['Wow'] ) ).concat( await this.request( 'Claire', 'extend', ['Awesome'], terms ) )
 			}
@@ -74,12 +73,12 @@ async function server () {
 	await Server.init( config )
 
 
-	socketClient = new WebSocket('ws://localhost:8080//DarconWS')
+	socketClient = new WebSocket('ws://localhost:8080/DarconWS')
 	socketClient.on('open', function open () {
 		console.log('Connected to /DarconWS Socket')
 	})
 	socketClient.on('message', function incoming (data) {
-		data = JSON.parse( data )
+		data = JSON.parse( data.toString() )
 		if ( data.state )
 			console.log('MOOOOOOODD >>>>>>>>>>>>>> ', data)
 	})
@@ -87,18 +86,16 @@ async function server () {
 
 async function comm () {
 	post( 'http://localhost:8080/DarconRPC', { division: DIVISION, entity: 'Marie', message: 'echo', params: [ 'Hello' ] } ).then( (res) => {
-		console.log( res.response.statusCode, res.response.statusMessage, res.body )
+		console.log( '********', res.response.statusCode, res.response.statusMessage, res.body )
 	} ) .catch( console.error )
 
 	post( 'http://localhost:8080/' + DIVISION + '/Marie/echo', { params: [ 'Hello' ] } ).then( (res) => {
-		console.log( res.response.statusCode, res.response.statusMessage, res.body )
+		console.log( '********', res.response.statusCode, res.response.statusMessage, res.body )
 	} ) .catch( console.error )
-
 
 	socketClient.send( JSON.stringify( { id: clerobee.generate(), division: DIVISION, entity: 'Marie', message: 'echo', params: [ 'Bonjour!', 'Salut!' ] } ) )
 	socketClient.on('message', function (data) {
-		data = JSON.parse( data )
-		console.log( '!!!!!!', data )
+		console.log( '!!!!!!????', JSON.parse( data.toString() ) )
 	} )
 }
 

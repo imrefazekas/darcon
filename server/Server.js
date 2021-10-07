@@ -18,7 +18,7 @@ Object.assign( Server.prototype, {
 		self.config = config
 
 		if (_.isFunction(config.fastify))
-			config.fastify = config.fastify( config )
+			config.fastify = await config.fastify( config )
 
 		let fastifyConfig = assigner.assign( {
 			logger: self.logger || true
@@ -33,7 +33,6 @@ Object.assign( Server.prototype, {
 
 		if (fastifyConfig.plugins)
 			await fastifyConfig.plugins( this.fastify )
-
 
 		if (self.config.rest)
 			await self.Radiation.rester( config.Darconer, this.fastify, assigner.assign( {}, self.config.rest, { logger: self.logger } ), fastifyConfig )
