@@ -1,6 +1,5 @@
 const fs = require('fs')
 const path = require('path')
-let VERSION = exports.VERSION = JSON.parse( fs.readFileSync( path.join( process.cwd(), 'package.json'), 'utf8' ) ).version
 
 const Validator = require('fastest-validator')
 const v = new Validator()
@@ -71,7 +70,7 @@ v.validate(PROTO_CONFIGURATION, DEF_CONFIGURATION)
 const DEF_PRESENCER = {
 	entity: { type: 'string', default: '' },
 	nodeID: { type: 'string', default: '' },
-	projectVersion: { type: 'string', default: VERSION },
+	projectVersion: { type: 'string', default: '1.0.0' },
 	entityVersion: { type: 'string', default: '1.0.0' }
 }
 const PROTO_PRESENCER = {}
