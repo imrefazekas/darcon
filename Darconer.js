@@ -12,6 +12,8 @@ const fs = require('fs')
 const path = require('path')
 let VERSION = exports.VERSION = JSON.parse( fs.readFileSync( path.join( __dirname, 'package.json'), 'utf8' ) ).version
 
+const { ensureDarconLog } = require('./util/Logger')
+
 let { MODE_REQUEST, MODE_INFORM, MODE_DELEGATE, newPacket, newPresencer, newConfig } = require( './Models' )
 
 let { BaseErrors, ErrorCreator } = require( './util/Errors' )
@@ -69,6 +71,8 @@ Object.assign( Darcon.prototype, {
 	async init (config = {}) { let self = this
 		this.name = config.name || 'Daconer'
 		config.logger = config.logger || PinoLogger( this.name, { level: this.logLevel, prettyPrint: process.env.DARCON_LOG_PRETTY || false } )
+
+		config.logger = ensureDarconLog(config.logger)
 
 		config = await newConfig( config )
 		assigner.assign( self, config )
