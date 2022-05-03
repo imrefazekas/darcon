@@ -1,5 +1,4 @@
 let fs = require('fs')
-let mkdirp = require('mkdirp')
 
 let path = require('path')
 
@@ -42,7 +41,7 @@ Object.assign( mortar, {
 		self.matcher = self.options.matcher || ( self.options.pattern ? function (filePath) { return self.options.pattern.test(filePath) } : function (filePath) { return filePath.endsWith( extension ) } )
 
 		if ( !fs.existsSync( self.options.folder ) )
-			mkdirp.sync( self.options.folder )
+			fs.mkdir( self.options.folder, { recursive: true } )
 
 		self.files = []
 

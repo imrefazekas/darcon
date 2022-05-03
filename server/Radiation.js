@@ -97,8 +97,8 @@ Object.assign( Radiator.prototype, {
 			socket.send( JSON.stringify( { id: data.id, result: res } ) )
 		}
 
-		fastify.register(require('fastify-websocket'), {
-			options: { path, maxPayload: options.maxPayload || 1048576 }
+		fastify.register(require('@fastify/websocket'), {
+			options: { maxPayload: options.maxPayload || 1048576 }
 		})
 
 		fastify.get(path, { websocket: true }, (connection, req ) => {

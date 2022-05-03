@@ -39,7 +39,6 @@ Object.assign( Server.prototype, {
 		if (self.config.ws)
 			await self.Radiation.ws( config.Darconer, this.fastify, assigner.assign( {}, self.config.ws, { logger: self.logger } ), fastifyConfig )
 
-
 		if (fastifyConfig.routes)
 			await fastifyConfig.routes( this.fastify )
 

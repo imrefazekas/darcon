@@ -72,8 +72,7 @@ async function server () {
 	config.logger = logger
 	await Server.init( config )
 
-
-	socketClient = new WebSocket('ws://localhost:8080/DarconWS')
+	socketClient = new WebSocket('ws://127.0.0.1:8080/DarconWS')
 	socketClient.on('open', function open () {
 		console.log('Connected to /DarconWS Socket')
 	})
@@ -85,11 +84,11 @@ async function server () {
 }
 
 async function comm () {
-	post( 'http://localhost:8080/DarconRPC', { division: DIVISION, entity: 'Marie', message: 'echo', params: [ 'Hello' ] } ).then( (res) => {
+	post( 'http://127.0.0.1:8080/DarconRPC', { division: DIVISION, entity: 'Marie', message: 'echo', params: [ 'Hello' ] } ).then( (res) => {
 		console.log( '********', res.response.statusCode, res.response.statusMessage, res.body )
 	} ) .catch( console.error )
 
-	post( 'http://localhost:8080/' + DIVISION + '/Marie/echo', { params: [ 'Hello' ] } ).then( (res) => {
+	post( 'http://127.0.0.1:8080/' + DIVISION + '/Marie/echo', { params: [ 'Hello' ] } ).then( (res) => {
 		console.log( '********', res.response.statusCode, res.response.statusMessage, res.body )
 	} ) .catch( console.error )
 
