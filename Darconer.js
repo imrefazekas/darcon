@@ -367,11 +367,9 @@ Object.assign( Darcon.prototype, {
 
 		self.logger.darconlog( null, 'Connecting to NATS:', self.nats, 'info' )
 
-		try {
-			self.natsServer = await NATS.connect( self.nats )
+		self.natsServer = await NATS.connect( self.nats )
 
-			self.logger.darconlog( null, 'NATS connection is made', { }, 'warn' )
-		} catch (err) { reject(err) }
+		self.logger.darconlog( null, 'NATS connection is made', { }, 'warn' )
 	},
 
 	async close () {
