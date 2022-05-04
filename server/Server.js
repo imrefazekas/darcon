@@ -43,7 +43,7 @@ Object.assign( Server.prototype, {
 			await fastifyConfig.routes( this.fastify )
 
 
-		let portToMap = process.env.NODE_SERVER_PORT || self.config.port || 8080
+		let portToMap = Number( process.env.NODE_SERVER_PORT || self.config.port || 8080 )
 		let ipToMap = process.env.NODE_SERVER_IP || self.config.ip || '0.0.0.0'
 		await this.fastify.listen(portToMap, ipToMap)
 

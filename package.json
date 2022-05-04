@@ -1,6 +1,6 @@
 {
 	"name": "darcon",
-	"version": "2.0.10",
+	"version": "2.0.11",
 	"description": "Simple Messaging/Service Bus for node entities over NatsIO",
 	"keywords": [
 		"messaging",
